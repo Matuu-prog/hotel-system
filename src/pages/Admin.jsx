@@ -1,14 +1,23 @@
-import { Container } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { Container, Button } from "react-bootstrap";
 
 function Admin() {
+  const navigate = useNavigate();
+
   return (
-    <Container className="mt-5">
-      <Link to="/" className="btn btn-outline-secondary mb-3">
-        ← Volver al HUB
-      </Link>
-      <h2>⚙️ Panel del Administrador</h2>
-      <p>Se gestionarán habitaciones y operadores (CRUD).</p>
+    <Container className="text-center mt-5">
+      <h2>Panel del Administrador</h2>
+      <p>Desde aquí podés registrar nuevos operadores o gestionar el sistema.</p>
+
+      <div className="d-flex justify-content-center gap-3 mt-4">
+        <Button variant="success" onClick={() => navigate("/registrar-operador")}>
+          Registrar nuevo operador
+        </Button>
+
+        <Button variant="secondary" onClick={() => navigate("/operador-login")}>
+          Ir al login de operador
+        </Button>
+      </div>
     </Container>
   );
 }

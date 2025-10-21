@@ -12,6 +12,10 @@ import Hub from "./pages/Hub.jsx";
 import Usuario from "./pages/Usuario.jsx";
 import Habitaciones from "./pages/Habitaciones.jsx";
 import Reservar from "./pages/Reservar.jsx";
+import Admin from "./pages/Admin";
+
+import OperadorLogin from "./pages/OperadorLogin";
+import RegistrarOperador from "./pages/RegistrarOperador";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
@@ -22,6 +26,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       {/* Roles */}
       <Route path="/hub" element={<Hub />} />
       <Route path="/usuario" element={<Usuario />} />
+      <Route path="/admin" element={<Admin />} />
 
       {/* Futuras rutas */}
       <Route path="/servicios" element={<h1>Sección Servicios</h1>} />
@@ -29,6 +34,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <Route path="/operador" element={<Operador />} />
 
       <Route path="/habitaciones" element={<Habitaciones />} />
+
+      <Route path="/operador-login" element={<OperadorLogin />} />
+        <Route path="/registrar-operador" element={<RegistrarOperador />} />
     
     </Routes>
   </BrowserRouter>
