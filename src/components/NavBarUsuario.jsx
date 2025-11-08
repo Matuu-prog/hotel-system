@@ -1,27 +1,63 @@
-// NavbarUsuario.jsx
-// Navbar del rol "Usuario Comercial" — muestra enlaces a distintas secciones del sitio.
-// Usa React-Bootstrap y React Router para navegación sin recargar la página.
-
-import { Navbar, Nav, Container } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { Navbar, Nav, Container, Button } from "react-bootstrap";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 function NavbarUsuario() {
+  const navigate = useNavigate();
+  const [usuarioActual, setUsuarioActual] = useState(null);
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("usuarioActual"));
+    setUsuarioActual(user);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("usuarioActual");
+    setUsuarioActual(null);
+    navigate("/"); // volver al inicio
+  };
+
   return (
     <Navbar bg="dark" variant="dark" expand="lg" sticky="top">
       <Container>
-        {/* Logo o nombre del hotel */}
-        <Navbar.Brand as={Link} to="/hub">
-          🏨 Hotel Paradise
+        <Navbar.Brand as={Link} to="/">
+          Hotel Mirador
         </Navbar.Brand>
+        <Navbar.Toggle aria-controls="basic-navbar-nav" />
+        <Navbar.Collapse id="basic-navbar-nav">
+          <Nav className="ms-auto align-items-center">
+            <Nav.Link as={Link} to="/">
+              Inicio
+            </Nav.Link>
+            <Nav.Link as={Link} to="/habitaciones">
+              Habitaciones
+            </Nav.Link>
+            <Nav.Link as={Link} to="/servicios">
+              Servicios
+            </Nav.Link>
 
-        <Navbar.Toggle aria-controls="navbar-usuario" />
-        <Navbar.Collapse id="navbar-usuario">
-          <Nav className="ms-auto">
-            {/* Enlaces principales */}
-            <Nav.Link as={Link} to="/hub">Inicio</Nav.Link>
-            <Nav.Link as={Link} to="/habitaciones">Habitaciones</Nav.Link>
-            <Nav.Link as={Link} to="/servicios">Servicios</Nav.Link>
-            <Nav.Link as={Link} to="/reservar">Hacer una Reserva</Nav.Link>
+            {/* Si NO hay usuario logueado → botón Iniciar sesión */}
+            {!usuarioActual ? (
+              <Nav.Link as={Link} to="/login">
+                Iniciar sesión
+              </Nav.Link>
+            ) : (
+              <>
+                <span className="text-light me-3">
+                  👤 {usuarioActual.nombre}{" "}
+                  {usuarioActual.rol === "superadmin" && (
+                    <span style={{ color: "gold" }}>⭐</span>
+                  )}
+                </span>
+                <Button
+                  variant="outline-light"
+                  size="sm"
+                  onClick={handleLogout}
+                >
+                  Cerrar sesión
+                </Button>
+              </>
+            )}
           </Nav>
         </Navbar.Collapse>
       </Container>

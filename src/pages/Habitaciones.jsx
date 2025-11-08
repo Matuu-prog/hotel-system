@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Container, Card, Button, Row, Col, Modal } from "react-bootstrap";
+import NavbarUsuario from "../components/NavbarUsuario";
 import DatePicker from "react-datepicker";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
@@ -115,6 +116,8 @@ function Habitaciones() {
   };
 
   return (
+    <>
+    <NavbarUsuario />
     <Container className="mt-4">
       <h2 className="text-center mb-4">Habitaciones Disponibles</h2>
       {habitaciones.map((hab) => (
@@ -195,6 +198,7 @@ function Habitaciones() {
   </Modal.Footer>
 </Modal>
     </Container>
+    </>
   );
 }
 
