@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Container, Card, Form, Button } from "react-bootstrap";
 import NavbarUsuario from "../components/NavBarUsuario";
 
@@ -7,9 +7,36 @@ export default function Pago() {
   const { state } = useLocation();
   const navigate = useNavigate();
 
-  if (!state?.roomId || !state?.startDate || !state?.endDate || !state?.cliente) {
-    navigate("/habitaciones");
-  }
+  const session = typeof window !== "undefined" ? window.sessionStorage : null;
+
+  const reservaId = useMemo(() => {
+    if (state?.reservaId) return state.reservaId;
+    const stored = session?.getItem("reservaEnProceso");
+    if (stored) return Number(stored);
+    return null;
+  }, [state, session]);
+
+  const [reserva, setReserva] = useState(null);
+
+  useEffect(() => {
+    const reservasGuardadas = JSON.parse(localStorage.getItem("reservas")) || [];
+
+    if (!reservaId) {
+      navigate("/habitaciones");
+      return;
+    }
+
+    const encontrada = reservasGuardadas.find((r) => String(r.id) === String(reservaId));
+    if (!encontrada) {
+      alert("No pudimos encontrar la reserva. Volvé a iniciar el proceso.");
+      session?.removeItem("reservaEnProceso");
+      navigate("/habitaciones");
+      return;
+    }
+
+    setReserva(encontrada);
+    session?.setItem("reservaEnProceso", String(encontrada.id));
+  }, [reservaId, navigate, session]);
 
   const [form, setForm] = useState({
     titular: "",
@@ -29,6 +56,7 @@ export default function Pago() {
   };
 
   const rangeToArray = (start, end) => {
+    if (!start || !end) return [];
     const out = [];
     let cur = new Date(start);
     const fin = new Date(end);
@@ -39,6 +67,13 @@ export default function Pago() {
     return out;
   };
 
+  const noches = useMemo(() => {
+    if (!reserva) return 0;
+    const fechas = rangeToArray(reserva.start, reserva.end);
+    return Math.max(1, fechas.length - 1);
+  }, [reserva]);
+
+
   const onSubmit = (e) => {
     e.preventDefault();
     const error = validar();
@@ -47,23 +82,44 @@ export default function Pago() {
       return;
     }
 
-    // Simular pago OK → persistir reserva con datos del cliente
+    if (!reserva) {
+      alert("No hay una reserva para asociar al pago.");
+      return;
+    }
+
+    const reservas = JSON.parse(localStorage.getItem("reservas")) || [];
+    const reservaIdx = reservas.findIndex((r) => String(r.id) === String(reserva.id));
+    if (reservaIdx === -1) {
+      alert("No pudimos encontrar la reserva. Volvé a iniciar el proceso.");
+      session?.removeItem("reservaEnProceso");
+      navigate("/habitaciones");
+      return;
+    }
+
     const habitaciones = JSON.parse(localStorage.getItem("habitaciones")) || [];
-    const idx = habitaciones.findIndex((h) => String(h.id) === String(state.roomId));
-    if (idx !== -1) {
-      const fechas = rangeToArray(state.startDate, state.endDate);
-      const prev = new Set(habitaciones[idx].reservedDates || []);
+ const habitacionIdx = habitaciones.findIndex((h) => String(h.id) === String(reserva.roomId));
+    const fechas = rangeToArray(reserva.start, reserva.end);
+
+    let roomNombre = reserva.roomName || `Habitación ${reserva.roomId}`;
+    let precioUnitario = 0;
+
+    if (habitacionIdx !== -1) {
+      const habitacion = habitaciones[habitacionIdx];
+      roomNombre = habitacion?.nombre || roomNombre;
+      precioUnitario = Number(habitacion?.precio ?? habitacion?.tarifa ?? 0);
+
+      const prev = new Set(habitacion.reservedDates || []);
       fechas.forEach((d) => prev.add(d));
-      habitaciones[idx] = {
-        ...habitaciones[idx],
+       habitaciones[habitacionIdx] = {
+        ...habitacion,
+        nombre: roomNombre,
         reservedDates: Array.from(prev),
         ultimaReserva: {
-          cliente: state.cliente,
-          startDate: state.startDate,
-          endDate: state.endDate,
+          cliente: reserva.cliente,
+          startDate: reserva.start,
+          endDate: reserva.end,
           pago: {
             titular: form.titular,
-            // Nunca guardes datos sensibles reales. Aquí es solo demo:
             masked: `**** **** **** ${form.numero.slice(-4)}`,
           },
         },
@@ -71,9 +127,65 @@ export default function Pago() {
       localStorage.setItem("habitaciones", JSON.stringify(habitaciones));
     }
 
+    const montoCalculado =
+      reserva?.pago?.monto && reserva.pago.monto > 0
+        ? reserva.pago.monto
+        : (precioUnitario || 0) * (noches || 1);
+
+    const reservaActualizada = {
+      ...reserva,
+      roomName: roomNombre,
+      pago: {
+        estado: "pagado",
+        metodo: "Tarjeta",
+        monto: montoCalculado,
+        fecha: new Date().toISOString(),
+        operador: "Reserva online",
+        titular: form.titular,
+        masked: `**** **** **** ${form.numero.slice(-4)}`,
+      },
+    };
+
+    reservas[reservaIdx] = reservaActualizada;
+    localStorage.setItem("reservas", JSON.stringify(reservas));
+
+    const logs = JSON.parse(localStorage.getItem("logs")) || [];
+    const registroLogs = [
+      {
+        id: Date.now(),
+        fecha: new Date().toISOString(),
+        operador: "Reserva online",
+        accion: "Reserva confirmada",
+        roomId: String(reserva.roomId),
+        reservaId: reserva.id,
+        monto: montoCalculado,
+      },
+      ...logs,
+    ];
+    localStorage.setItem("logs", JSON.stringify(registroLogs));
+
+    session?.removeItem("reservaEnProceso");
+    setReserva(reservaActualizada);
+
     alert("✅ Pago procesado. ¡Reserva confirmada!");
     navigate("/habitaciones");
   };
+
+  if (!reserva) {
+    return (
+      <>
+        <NavbarUsuario />
+        <Container className="mt-5">
+          <Card className="shadow-sm">
+            <Card.Body>
+              <h3 className="mb-3">Buscando reserva…</h3>
+              <p className="text-muted mb-0">Redirigiendo al flujo de reserva.</p>
+            </Card.Body>
+          </Card>
+        </Container>
+      </>
+    );
+  }
 
   return (
     <>
@@ -84,8 +196,9 @@ export default function Pago() {
             <h3 className="mb-3">Pago</h3>
 
             <p className="text-muted">
-              Habitación #{state?.roomId} — del {state?.startDate} al {state?.endDate}<br />
-              Cliente: {state?.cliente?.nombre} — {state?.cliente?.email}
+              {reserva.roomName} — del {reserva.start} al {reserva.end} ({noches} noches)
+              <br />
+              Cliente: {reserva.cliente?.nombre} — {reserva.cliente?.email}
             </p>
 
             <Form onSubmit={onSubmit}>

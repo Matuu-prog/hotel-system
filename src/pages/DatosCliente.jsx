@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Container, Card, Form, Button } from "react-bootstrap";
 import NavbarUsuario from "../components/NavBarUsuario";
 
@@ -7,10 +7,43 @@ export default function DatosCliente() {
   const { state } = useLocation();
   const navigate = useNavigate();
 
-  // Si no viene state, volvemos a habitaciones
-  if (!state?.roomId || !state?.startDate || !state?.endDate) {
-    navigate("/habitaciones");
-  }
+  useEffect(() => {
+    if (!state?.roomId || !state?.startDate || !state?.endDate) {
+      navigate("/habitaciones");
+    }
+  }, [state, navigate]);
+
+  const session = typeof window !== "undefined" ? window.sessionStorage : null;
+  const [habitaciones, setHabitaciones] = useState([]);
+
+  useEffect(() => {
+    const data = JSON.parse(localStorage.getItem("habitaciones")) || [];
+    setHabitaciones(data);
+  }, []);
+
+  const habitacion = useMemo(
+    () => habitaciones.find((h) => String(h.id) === String(state?.roomId)),
+    [habitaciones, state?.roomId]
+  );
+
+  const toYMD = (value) => {
+    const date = new Date(value);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+      date.getDate()
+    ).padStart(2, "0")}`;
+  };
+
+  const rangeToArray = (start, end) => {
+    if (!start || !end) return [];
+    const out = [];
+    let current = new Date(start);
+    const last = new Date(end);
+    while (current <= last) {
+      out.push(toYMD(current));
+      current.setDate(current.getDate() + 1);
+    }
+    return out;
+  };
 
   const [form, setForm] = useState({
     nombre: "",
@@ -39,12 +72,68 @@ export default function DatosCliente() {
       return;
     }
 
+    const reservas = JSON.parse(localStorage.getItem("reservas")) || [];
+    const fechas = rangeToArray(state.startDate, state.endDate);
+    const noches = Math.max(1, fechas.length - 1);
+    const precioBase = Number(habitacion?.precio ?? habitacion?.tarifa ?? 0);
+    const montoEstimado = precioBase * noches;
+
+    const roomName = habitacion?.nombre || `Habitación ${state.roomId}`;
+
+    const sessionReservaId = session?.getItem("reservaEnProceso");
+    let reservaId = sessionReservaId ? Number(sessionReservaId) : null;
+    let reservaIdx = reservaId
+      ? reservas.findIndex((r) => String(r.id) === String(reservaId))
+      : -1;
+
+    if (reservaIdx !== -1) {
+      const existente = reservas[reservaIdx];
+      reservas[reservaIdx] = {
+        ...existente,
+        roomId: String(state.roomId),
+        roomName,
+        start: state.startDate,
+        end: state.endDate,
+        cliente: { ...form },
+        pago: {
+          estado: "pendiente",
+          metodo: null,
+          monto: montoEstimado,
+          fecha: null,
+          operador: "Reserva online",
+        },
+        origen: "web",
+      };
+      reservaId = existente.id;
+    } else {
+      const nueva = {
+        id: Date.now(),
+        roomId: String(state.roomId),
+        roomName,
+        start: state.startDate,
+        end: state.endDate,
+        cliente: { ...form },
+        pago: {
+          estado: "pendiente",
+          metodo: null,
+          monto: montoEstimado,
+          fecha: null,
+          operador: "Reserva online",
+        },
+        createdAt: new Date().toISOString(),
+        origen: "web",
+      };
+      reservas.push(nueva);
+      reservaId = nueva.id;
+    }
+
+    localStorage.setItem("reservas", JSON.stringify(reservas));
+    session?.setItem("reservaEnProceso", String(reservaId));
+
+
     navigate("/pago", {
       state: {
-        roomId: state.roomId,
-        startDate: state.startDate,
-        endDate: state.endDate,
-        cliente: form,
+        reservaId,
       },
     });
   };
@@ -57,7 +146,7 @@ export default function DatosCliente() {
           <Card.Body>
             <h3 className="mb-3">Datos del cliente</h3>
             <p className="text-muted">
-              Reserva seleccionada: Habitación #{state?.roomId} — del {state?.startDate} al {state?.endDate}
+              Reserva seleccionada: {habitacion?.nombre || `Habitación #${state?.roomId}`} — del {state?.startDate} al {state?.endDate}
             </p>
 
             <Form onSubmit={onSubmit}>

@@ -10,7 +10,6 @@ import RutaPrivada from "./components/RutaPrivada";
 import DatosCliente from "./pages/DatosCliente";
 import Pago from "./pages/Pago";
 
-
 function App() {
   return (
     <Routes>
@@ -20,8 +19,8 @@ function App() {
       <Route path="/servicios" element={<Servicios />} />
       <Route path="/login" element={<Login />} />
       <Route path="/reservar" element={<Reservar />} />
-<Route path="/datos-cliente" element={<DatosCliente />} />
-<Route path="/pago" element={<Pago />} />
+      <Route path="/datos-cliente" element={<DatosCliente />} />
+      <Route path="/pago" element={<Pago />} />
 
       {/* Protegidas */}
       <Route

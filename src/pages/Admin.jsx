@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Container, Table, Button, Form, Row, Col, Alert, Badge } from "react-bootstrap";
-import NavbarUsuario from "../components/NavbarUsuario"; // 👈 ojo: nombre y ruta
+import NavBarUsuario from "../components/NavBarUsuario";
 
 // Helpers seguros para leer/escribir localStorage
 const safeParse = (key, fallback) => {
@@ -55,7 +55,7 @@ export default function Admin() {
   if (!isAdmin) {
     return (
       <>
-        <NavbarUsuario />
+        <NavBarUsuario />
         <Container className="mt-5">
           <Alert variant="warning">
             Acceso restringido. Iniciá sesión como administrador para ver esta sección.
@@ -162,7 +162,7 @@ export default function Admin() {
 
   return (
     <>
-      <NavbarUsuario />
+      <NavBarUsuario />
 
       <Container className="mt-5">
         <h2 className="mb-3">

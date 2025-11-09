@@ -10,7 +10,7 @@ export default function InfoCliente() {
   // Si llegamos sin state, volvemos a reservar
   useEffect(() => {
     if (!state?.roomId || !state?.start || !state?.end) {
-      navigate("/reservar");
+      navigate("/habitaciones");
     }
   }, [state, navigate]);
 
@@ -32,6 +32,25 @@ export default function InfoCliente() {
     () => habitaciones.find((h) => String(h.id) === String(state?.roomId)),
     [habitaciones, state]
   );
+
+const toYMD = (value) => {
+    const date = new Date(value);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+      date.getDate()
+    ).padStart(2, "0")}`;
+  };
+
+  const rangeToArray = (start, end) => {
+    if (!start || !end) return [];
+    const out = [];
+    let current = new Date(start);
+    const last = new Date(end);
+    while (current <= last) {
+      out.push(toYMD(current));
+      current.setDate(current.getDate() + 1);
+    }
+    return out;
+  };
 
   const validar = () => {
     if (!nombre.trim() || !email.trim() || !dni.trim() || !telefono.trim()) {
@@ -64,21 +83,36 @@ export default function InfoCliente() {
 
     // Creamos un registro de reserva en "reservas" con estado pendiente de pago
     const reservas = JSON.parse(localStorage.getItem("reservas")) || [];
+    const roomName = room?.nombre || `Habitación ${state.roomId}`;
+    const noches = Math.max(1, rangeToArray(state.start, state.end).length - 1);
+    const precioBase = Number(room?.precio ?? room?.tarifa ?? 0);
+    const montoEstimado = precioBase * noches;
     const nueva = {
       id: Date.now(),
       roomId: String(state.roomId),
-      fechas: { start: state.start, end: state.end },
+      roomName,
+      start: state.start,
+      end: state.end,
       cliente: { nombre, email, dni, telefono },
-      estado: "pendiente_pago",
-      pago: null,
+      pago: {
+        estado: "pendiente",
+        metodo: null,
+        monto: montoEstimado,
+        fecha: null,
+        operador: "Reserva online",
+      },
       createdAt: new Date().toISOString(),
+      origen: "web",
     };
+
     reservas.push(nueva);
     localStorage.setItem("reservas", JSON.stringify(reservas));
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem("reservaEnProceso", String(nueva.id));
+    }
 
     // Navegar a pago con la reserva creada
-    navigate("/reserva/pago", { state: { reservaId: nueva.id } });
-  };
+    navigate("/pago", { state: { reservaId: nueva.id } });
 
   return (
     <>
@@ -127,4 +161,5 @@ export default function InfoCliente() {
       </Container>
     </>
   );
+  }
 }
