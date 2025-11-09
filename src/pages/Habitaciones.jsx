@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Container, Card, Button, Row, Col, Modal } from "react-bootstrap";
-import NavbarUsuario from "../components/NavbarUsuario";
+import NavbarUsuario from "../components/NavBarUsuario";
 import DatePicker from "react-datepicker";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";

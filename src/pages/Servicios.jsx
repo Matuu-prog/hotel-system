@@ -1,4 +1,4 @@
-import NavbarUsuario from "../components/NavbarUsuario";
+import NavbarUsuario from "../components/NavBarUsuario";
 import { Container } from "react-bootstrap";
 
 function Servicios() {

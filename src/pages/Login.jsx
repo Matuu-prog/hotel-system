@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Button, Card, Container } from "react-bootstrap";
-import NavbarUsuario from "../components/NavbarUsuario";
+import NavbarUsuario from "../components/NavBarUsuario";
 
 function Login() {
   const [usuario, setUsuario] = useState("");

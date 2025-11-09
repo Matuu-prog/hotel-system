@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Container, Table, Button, Form, Row, Col } from "react-bootstrap";
-import NavbarUsuario from "../components/NavbarUsuario";
+import NavbarUsuario from "../components/NavBarUsuario";
 
 function Admin() {
   const [usuarios, setUsuarios] = useState([]);

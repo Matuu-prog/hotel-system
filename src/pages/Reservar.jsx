@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { Container, Form, Button, Card } from "react-bootstrap";
 import { useLocation, useNavigate } from "react-router-dom";
-import NavbarUsuario from "../components/NavbarUsuario";
+import NavbarUsuario from "../components/NavBarUsuario";
 import { getHabitaciones, saveHabitaciones } from "../utils/db";
 
 function Reservar() {

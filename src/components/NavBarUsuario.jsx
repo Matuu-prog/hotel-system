@@ -14,33 +14,36 @@ function NavbarUsuario() {
   const handleLogout = () => {
     localStorage.removeItem("usuarioActual");
     setUsuarioActual(null);
-    navigate("/"); // volver al inicio
+    navigate("/");
   };
+
+  // ruta del panel según rol
+  const panelPath =
+    usuarioActual?.rol === "superadmin" || usuarioActual?.rol === "admin"
+      ? "/admin"
+      : usuarioActual?.rol === "operador"
+      ? "/operador"
+      : null;
 
   return (
     <Navbar bg="dark" variant="dark" expand="lg" sticky="top">
       <Container>
-        <Navbar.Brand as={Link} to="/">
-          Hotel Mirador
-        </Navbar.Brand>
+        <Navbar.Brand as={Link} to="/">Hotel Mirador</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto align-items-center">
-            <Nav.Link as={Link} to="/">
-              Inicio
-            </Nav.Link>
-            <Nav.Link as={Link} to="/habitaciones">
-              Habitaciones
-            </Nav.Link>
-            <Nav.Link as={Link} to="/servicios">
-              Servicios
-            </Nav.Link>
+            <Nav.Link as={Link} to="/">Inicio</Nav.Link>
+            <Nav.Link as={Link} to="/habitaciones">Habitaciones</Nav.Link>
+            <Nav.Link as={Link} to="/servicios">Servicios</Nav.Link>
 
-            {/* Si NO hay usuario logueado → botón Iniciar sesión */}
-            {!usuarioActual ? (
-              <Nav.Link as={Link} to="/login">
-                Iniciar sesión
+            {panelPath && (
+              <Nav.Link as={Link} to={panelPath}>
+                Panel
               </Nav.Link>
+            )}
+
+            {!usuarioActual ? (
+              <Nav.Link as={Link} to="/login">Iniciar sesión</Nav.Link>
             ) : (
               <>
                 <span className="text-light me-3">
@@ -49,11 +52,7 @@ function NavbarUsuario() {
                     <span style={{ color: "gold" }}>⭐</span>
                   )}
                 </span>
-                <Button
-                  variant="outline-light"
-                  size="sm"
-                  onClick={handleLogout}
-                >
+                <Button variant="outline-light" size="sm" onClick={handleLogout}>
                   Cerrar sesión
                 </Button>
               </>

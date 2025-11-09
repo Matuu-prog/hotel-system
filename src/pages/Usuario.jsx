@@ -2,7 +2,7 @@
 // Página principal para el rol "Usuario Comercial".
 // Incluye la Navbar superior y el carrusel de imágenes del hotel.
 
-import NavbarUsuario from "../components/NavbarUsuario";
+import NavbarUsuario from "../components/NavBarUsuario";
 import CarouselHotel from "../components/CarouselHotel";
 import { Container } from "react-bootstrap";
 

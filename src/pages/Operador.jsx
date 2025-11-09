@@ -1,3 +1,4 @@
+import NavbarUsuario from "../components/NavBarUsuario";
 import { useState, useEffect } from "react";
 import { Container, Table, Button, Modal } from "react-bootstrap";
 
@@ -65,6 +66,8 @@ function Operador() {
   );
 
   return (
+    <>
+    <NavbarUsuario/>
     <Container className="mt-4">
       <h2 className="text-center mb-4">Panel del Operador</h2>
       {habitacionesConReservas.length === 0 ? (
@@ -141,6 +144,7 @@ function Operador() {
         </Modal.Footer>
       </Modal>
     </Container>
+    </>
   );
 }
 
