@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, Card, Button, Row, Col, Modal, Carousel } from "react-bootstrap";
+import { Container, Card, Button, Row, Col, Modal, Carousel, Alert } from "react-bootstrap";
 import NavbarUsuario from "../components/NavBarUsuario";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "./Habitaciones.css";
+import { ensureHabitaciones } from "../utils/habitaciones";
 
 function Habitaciones() {
   const [habitaciones, setHabitaciones] = useState([]);
@@ -16,39 +17,8 @@ function Habitaciones() {
 
   // Cargar/sembrar habitaciones
   useEffect(() => {
-    const saved = localStorage.getItem("habitaciones");
-    if (saved) {
-      setHabitaciones(JSON.parse(saved));
-    } else {
-      const iniciales = [
-        {
-          id: 1,
-          nombre: "Habitación Deluxe",
-          piso: 1,
-          descripcion: "Cama King, vista al mar, aire acondicionado, TV, WiFi.",
-          imagenes: ["/img/hab1a.jpg", "/img/hab1b.jpg", "/img/hab1c.jpg"],
-          reservedDates: [],
-        },
-        {
-          id: 2,
-          nombre: "Habitación Familiar",
-          piso: 2,
-          descripcion: "2 camas Queen, ideal para 4 personas, balcón privado.",
-          imagenes: ["/img/hab2a.jpg", "/img/hab2b.jpg", "/img/hab2c.jpg"],
-          reservedDates: [],
-        },
-        {
-          id: 3,
-          nombre: "Suite Ejecutiva",
-          piso: 3,
-          descripcion: "Suite con escritorio, minibar, jacuzzi y servicio premium.",
-          imagenes: ["/img/hab3a.jpg", "/img/hab3b.jpg", "/img/hab3c.jpg"],
-          reservedDates: [],
-        },
-      ];
-      localStorage.setItem("habitaciones", JSON.stringify(iniciales));
-      setHabitaciones(iniciales);
-    }
+   const disponibles = ensureHabitaciones();
+    setHabitaciones(disponibles);
   }, []);
 
   // Abrir modal con la room seleccionada
@@ -90,6 +60,21 @@ function Habitaciones() {
     setRange([null, null]);
   };
 
+  const precioSeleccionado = useMemo(
+    () => Number(selectedRoom?.precio ?? selectedRoom?.tarifa ?? 0),
+    [selectedRoom]
+  );
+
+  const nochesSeleccionadas = useMemo(() => {
+    const [start, end] = range || [];
+    if (!start || !end) return 0;
+    const ms = Math.max(0, end.getTime() - start.getTime());
+    const diff = Math.round(ms / (1000 * 60 * 60 * 24));
+    return Math.max(1, diff || 0);
+  }, [range]);
+
+  const subtotalSeleccionado = precioSeleccionado * nochesSeleccionadas;
+
   return (
     <>
       <NavbarUsuario />
@@ -127,13 +112,16 @@ function Habitaciones() {
                   {/* Descripción + botón */}
                   <Col md={8} className="d-flex">
                     <Card.Body className="d-flex flex-column justify-content-center room-info">
-                      <Card.Title>{hab.nombre}</Card.Title>
-                      <Card.Text>{hab.descripcion}</Card.Text>
-                      <Card.Text className="room-extra">
-                        <em>Seleccioná fechas para ver disponibilidad y tarifas.</em>
-                      </Card.Text>
-                      <div className="mt-3">
-                        <Button variant="primary" onClick={() => handleReservar(hab)}>
+                        <Card.Title>{hab.nombre}</Card.Title>
+                        <Card.Text>{hab.descripcion}</Card.Text>
+                        <Card.Text className="fw-semibold">
+                          ${Number(hab.precio ?? hab.tarifa ?? 0).toLocaleString("es-AR")} por noche
+                        </Card.Text>
+                        <Card.Text className="room-extra">
+                          <em>Seleccioná fechas para ver disponibilidad y tarifas.</em>
+                        </Card.Text>
+                        <div className="mt-3">
+                          <Button variant="primary" onClick={() => handleReservar(hab)}>
                           Reservar
                         </Button>
                       </div>
@@ -157,7 +145,9 @@ function Habitaciones() {
         <Modal.Body>
           {selectedRoom && (
             <>
-              <p>Seleccioná el rango de fechas:</p>
+              <p>
+                Seleccioná el rango de fechas. Tarifa: ${precioSeleccionado.toLocaleString("es-AR")} por noche.
+              </p>
               <Calendar
                 selectRange
                 onChange={setRange}
@@ -166,6 +156,16 @@ function Habitaciones() {
                 minDate={new Date()}
               />
               <small className="text-muted">Las fechas bloqueadas ya están reservadas.</small>
+            {nochesSeleccionadas > 0 && (
+                <Alert variant="light" className="mt-3 border">
+                  <div className="mb-1">
+                    <strong>Noches:</strong> {nochesSeleccionadas}
+                  </div>
+                  <div>
+                    <strong>Subtotal estimado:</strong> ${subtotalSeleccionado.toLocaleString("es-AR")}
+                  </div>
+                </Alert>
+              )}
             </>
           )}
         </Modal.Body>

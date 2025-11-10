@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Button, Container, Card } from "react-bootstrap";
+import { sanitizeName, sanitizeAlphanumeric } from "../utils/validation";
 
 function RegistrarOperador() {
   const [nombre, setNombre] = useState("");
@@ -44,7 +45,7 @@ function RegistrarOperador() {
               <Form.Control
                 type="text"
                 value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
+                onChange={(e) => setNombre(sanitizeName(e.target.value))}
                 required
               />
             </Form.Group>
@@ -54,8 +55,7 @@ function RegistrarOperador() {
               <Form.Control
                 type="text"
                 value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
-                required
+                onChange={(e) => setUsuario(sanitizeAlphanumeric(e.target.value))}
               />
             </Form.Group>
 

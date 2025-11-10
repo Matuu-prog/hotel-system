@@ -2,6 +2,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { Container, Card, Form, Button } from "react-bootstrap";
 import NavbarUsuario from "../components/NavBarUsuario";
+import { ensureHabitaciones } from "../utils/habitaciones";
+import {
+  sanitizeName,
+  sanitizePhone,
+  sanitizeNumeric,
+  isValidName,
+  isValidEmail,
+  isValidPhone,
+  isValidDocument,
+} from "../utils/validation";
 
 export default function DatosCliente() {
   const { state } = useLocation();
@@ -17,7 +27,7 @@ export default function DatosCliente() {
   const [habitaciones, setHabitaciones] = useState([]);
 
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("habitaciones")) || [];
+    const data = ensureHabitaciones();
     setHabitaciones(data);
   }, []);
 
@@ -53,14 +63,22 @@ export default function DatosCliente() {
   });
 
   const onChange = (e) => {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+     const { name, value } = e.target;
+    const sanitizers = {
+      nombre: sanitizeName,
+      email: (val) => val.trim(),
+      telefono: sanitizePhone,
+      documento: sanitizeNumeric,
+    };
+    const sanitizer = sanitizers[name] || ((val) => val);
+    setForm((f) => ({ ...f, [name]: sanitizer(value) }));
   };
 
   const validar = () => {
-    if (!form.nombre.trim()) return "Ingresá tu nombre";
-    if (!/^\S+@\S+\.\S+$/.test(form.email)) return "Email inválido";
-    if (!/^\+?\d{7,15}$/.test(form.telefono)) return "Teléfono inválido";
-    if (!form.documento.trim()) return "Documento requerido";
+    if (!isValidName(form.nombre)) return "Ingresá tu nombre (solo letras).";
+    if (!isValidEmail(form.email)) return "Email inválido";
+    if (!isValidPhone(form.telefono)) return "Teléfono inválido (solo números).";
+    if (!isValidDocument(form.documento)) return "Documento inválido (solo números).";
     return "";
   };
 
@@ -80,6 +98,14 @@ export default function DatosCliente() {
 
     const roomName = habitacion?.nombre || `Habitación ${state.roomId}`;
 
+    const clienteNormalizado = {
+      nombre: form.nombre.trim(),
+      email: form.email.trim(),
+      telefono: form.telefono.trim(),
+      documento: form.documento.trim(),
+    };
+
+
     const sessionReservaId = session?.getItem("reservaEnProceso");
     let reservaId = sessionReservaId ? Number(sessionReservaId) : null;
     let reservaIdx = reservaId
@@ -94,7 +120,7 @@ export default function DatosCliente() {
         roomName,
         start: state.startDate,
         end: state.endDate,
-        cliente: { ...form },
+         cliente: clienteNormalizado,
         pago: {
           estado: "pendiente",
           metodo: null,
@@ -112,7 +138,7 @@ export default function DatosCliente() {
         roomName,
         start: state.startDate,
         end: state.endDate,
-        cliente: { ...form },
+        cliente: clienteNormalizado,
         pago: {
           estado: "pendiente",
           metodo: null,

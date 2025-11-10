@@ -2,36 +2,36 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Button, Card, Container } from "react-bootstrap";
 import NavbarUsuario from "../components/NavBarUsuario";
+import { sanitizeAlphanumeric } from "../utils/validation";
 
 function Login() {
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-const handleLogin = (e) => {
-  e.preventDefault();
+  const handleLogin = (e) => {
+    e.preventDefault();
 
-  const usuarios = JSON.parse(localStorage.getItem("usuarios")) || [];
-  // OJO: el usuario es sensible a mayús/minús. Debe ser "Mateo"
-  const user = usuarios.find(
-    (u) => u.usuario === usuario && u.password === password
-  );
+    const usuarios = JSON.parse(localStorage.getItem("usuarios")) || [];
+    const user = usuarios.find(
+      (u) => u.usuario === usuario && u.password === password
+    );
 
-  if (!user) {
-    alert("Usuario o contraseña incorrectos");
-    return;
-  }
+    if (!user) {
+      alert("Usuario o contraseña incorrectos");
+      return;
+    }
 
-  localStorage.setItem("usuarioActual", JSON.stringify(user));
+    localStorage.setItem("usuarioActual", JSON.stringify(user));
 
-  if (user.rol === "superadmin" || user.rol === "admin") {
-    navigate("/admin");
-  } else if (user.rol === "operador") {
-    navigate("/operador");
-  } else {
-    navigate("/");
-  }
-};
+    if (user.rol === "superadmin" || user.rol === "admin") {
+      navigate("/admin");
+    } else if (user.rol === "operador") {
+      navigate("/operador");
+    } else {
+      navigate("/");
+    }
+  };
 
   return (
     <>
@@ -46,7 +46,7 @@ const handleLogin = (e) => {
                 <Form.Control
                   type="text"
                   value={usuario}
-                  onChange={(e) => setUsuario(e.target.value)}
+                  onChange={(e) => setUsuario(sanitizeAlphanumeric(e.target.value))}
                   placeholder="Ingrese su usuario"
                   required
                 />

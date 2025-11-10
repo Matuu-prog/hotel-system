@@ -16,6 +16,22 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import NavbarUsuario from "../components/NavBarUsuario";
+import { ensureHabitaciones } from "../utils/habitaciones";
+import {
+  sanitizeName,
+  sanitizePhone,
+  sanitizeNumeric,
+  sanitizeCardNumber,
+  sanitizeCardExpiry,
+  sanitizeCVV,
+  isValidName,
+  isValidEmail,
+  isValidPhone,
+  isValidDocument,
+  isValidCardNumber,
+  isValidExpiry,
+  isValidCVV,
+} from "../utils/validation";
 
 // Utils
 const ymd = (value) => {
@@ -119,37 +135,7 @@ export default function Operador() {
   const [mensajeReserva, setMensajeReserva] = useState({ tipo: "", texto: "" });
 
   useEffect(() => {
-    // Habitaciones iniciales si no existen
-    let habs = load("habitaciones", null);
-    if (!habs) {
-      habs = [
-        {
-          id: 1,
-          nombre: "Habitación Deluxe",
-          piso: 1,
-          descripcion: "Cama King, vista al mar, aire acondicionado, TV, WiFi.",
-          imagenes: ["/img/hab1a.jpg", "/img/hab1b.jpg", "/img/hab1c.jpg"],
-          reservedDates: [],
-        },
-        {
-          id: 2,
-          nombre: "Habitación Familiar",
-          piso: 2,
-          descripcion: "2 camas Queen, ideal para 4 personas, balcón privado.",
-          imagenes: ["/img/hab2a.jpg", "/img/hab2b.jpg", "/img/hab2c.jpg"],
-          reservedDates: [],
-        },
-        {
-          id: 3,
-          nombre: "Suite Ejecutiva",
-          piso: 3,
-          descripcion: "Suite con escritorio, minibar, jacuzzi y servicio premium.",
-          imagenes: ["/img/hab3a.jpg", "/img/hab3b.jpg", "/img/hab3c.jpg"],
-          reservedDates: [],
-        },
-      ];
-      save("habitaciones", habs);
-    }
+    const habs = ensureHabitaciones();
     setHabitaciones(habs);
 
     // Estados iniciales de las puertas
@@ -388,14 +374,21 @@ export default function Operador() {
 
   const onChangeClienteReserva = (event) => {
     const { name, value } = event.target;
-    setClienteReserva((prev) => ({ ...prev, [name]: value }));
+    const sanitizers = {
+      nombre: sanitizeName,
+      email: (val) => val.trim(),
+      telefono: sanitizePhone,
+      dni: sanitizeNumeric,
+    };
+    const sanitizer = sanitizers[name] || ((val) => val);
+    setClienteReserva((prev) => ({ ...prev, [name]: sanitizer(value) }));
   };
 
   const validarClienteReserva = () => {
-    if (!clienteReserva.nombre.trim()) return "Ingresá el nombre del huésped.";
-    if (!/^\S+@\S+\.\S+$/.test(clienteReserva.email)) return "Ingresá un email válido.";
-    if (!/^[\d\s()+-]{6,20}$/.test(clienteReserva.telefono)) return "Ingresá un teléfono válido.";
-    if (!clienteReserva.dni.trim()) return "Ingresá un documento o DNI válido.";
+    if (!isValidName(clienteReserva.nombre)) return "Ingresá el nombre del huésped (solo letras).";
+    if (!isValidEmail(clienteReserva.email)) return "Ingresá un email válido.";
+    if (!isValidPhone(clienteReserva.telefono)) return "Ingresá un teléfono válido (solo números).";
+    if (!isValidDocument(clienteReserva.dni)) return "Ingresá un documento o DNI válido (solo números).";
     return "";
   };
 
@@ -534,7 +527,17 @@ export default function Operador() {
 
   const onChangePago = (e) => {
     const { name, value } = e.target;
-    setFormPago((prev) => ({ ...prev, [name]: value }));
+    const sanitizers = {
+      metodo: (val) => val,
+      monto: sanitizeDecimal,
+      efectivoEntregado: sanitizeDecimal,
+      titular: sanitizeName,
+      numero: sanitizeCardNumber,
+      vencimiento: sanitizeCardExpiry,
+      cvv: sanitizeCVV,
+    };
+    const sanitizer = sanitizers[name] || ((val) => val);
+    setFormPago((prev) => ({ ...prev, [name]: sanitizer(value) }));
   };
 
   const confirmarPago = (event) => {
@@ -555,19 +558,19 @@ export default function Operador() {
         return;
       }
     } else {
-      if (!formPago.titular.trim()) {
-        alert("Ingresá el titular de la tarjeta.");
+      if (!isValidName(formPago.titular)) {
+        alert("Ingresá el titular de la tarjeta (solo letras).");
         return;
       }
-      if (!/^\d{13,19}$/.test(formPago.numero)) {
+      if (!isValidCardNumber(formPago.numero)) {
         alert("Número de tarjeta inválido.");
         return;
       }
-      if (!/^\d{2}\/\d{2}$/.test(formPago.vencimiento)) {
+      if (!isValidExpiry(formPago.vencimiento)) {
         alert("El vencimiento debe tener el formato MM/AA.");
         return;
       }
-      if (!/^\d{3,4}$/.test(formPago.cvv)) {
+      if (!isValidCVV(formPago.cvv)) {
         alert("Ingresá un CVV válido.");
         return;
       }
@@ -1364,12 +1367,10 @@ export default function Operador() {
                   <Form.Label>Monto a cobrar</Form.Label>
                   <Form.Control
                     name="monto"
-                    type="number"
-                    min="0"
-                    step="0.01"
                     value={formPago.monto}
                     onChange={onChangePago}
                     placeholder="Ingrese el monto"
+                    inputMode="decimal"
                     required
                   />
                 </Form.Group>
@@ -1378,12 +1379,10 @@ export default function Operador() {
                     <Form.Label>Cantidad de efectivo recibido</Form.Label>
                     <Form.Control
                       name="efectivoEntregado"
-                      type="number"
-                      min="0"
-                      step="0.01"
                       value={formPago.efectivoEntregado}
                       onChange={onChangePago}
                       placeholder="Ej: 5000"
+                      inputMode="decimal"
                       required
                     />
                   </Form.Group>
@@ -1405,6 +1404,7 @@ export default function Operador() {
                         value={formPago.numero}
                         onChange={onChangePago}
                         placeholder="Solo números"
+                        inputMode="numeric"
                         required
                       />
                     </Form.Group>
@@ -1417,6 +1417,7 @@ export default function Operador() {
                             value={formPago.vencimiento}
                             onChange={onChangePago}
                             placeholder="MM/AA"
+                            inputMode="numeric"
                             required
                           />
                         </Form.Group>
@@ -1429,6 +1430,7 @@ export default function Operador() {
                             value={formPago.cvv}
                             onChange={onChangePago}
                             placeholder="3 o 4 dígitos"
+                            inputMode="numeric"
                             required
                           />
                         </Form.Group>

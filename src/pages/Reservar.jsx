@@ -4,6 +4,16 @@ import { Container, Card, Form, Button, Row, Col, Alert } from "react-bootstrap"
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import NavbarUsuario from "../components/NavBarUsuario";
+import { ensureHabitaciones } from "../utils/habitaciones";
+import {
+  sanitizeName,
+  sanitizePhone,
+  sanitizeNumeric,
+  isValidName,
+  isValidEmail,
+  isValidPhone,
+  isValidDocument,
+} from "../utils/validation";
 
 // Utils
 const toYMD = (d) => {
@@ -56,39 +66,8 @@ export default function Reservar() {
 
   // Cargar habitaciones
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("habitaciones"));
-    if (data && Array.isArray(data)) {
-      setHabitaciones(data);
-    } else {
-      const iniciales = [
-        {
-          id: 1,
-          nombre: "Suite Premium",
-          descripcion: "Amplia habitación con vista al mar.",
-          precio: 200,
-          piso: 5,
-          reservedDates: [],
-        },
-        {
-          id: 2,
-          nombre: "Habitación Doble",
-          descripcion: "Ideal para parejas, con balcón privado.",
-          precio: 150,
-          piso: 4,
-          reservedDates: [],
-        },
-        {
-          id: 3,
-          nombre: "Habitación Simple",
-          descripcion: "Cómoda y económica, perfecta para una persona.",
-          precio: 100,
-          piso: 2,
-          reservedDates: [],
-        },
-        ];
-      localStorage.setItem("habitaciones", JSON.stringify(iniciales));
-      setHabitaciones(iniciales);
-    }
+    const disponibles = ensureHabitaciones();
+    setHabitaciones(disponibles);
   }, []);
 
   // Habitación seleccionada
@@ -116,14 +95,21 @@ export default function Reservar() {
 
   // Validación básica de datos de cliente
   const validateCliente = () => {
-    const emailOk = /\S+@\S+\.\S+/.test(cliente.email);
-    const telOk = /^[0-9+\s()-]{6,}$/.test(cliente.telefono);
-    const docOk = cliente.documento.trim().length >= 6;
-
-    if (!cliente.nombre.trim()) return { ok: false, text: "Ingresá tu nombre completo." };
-    if (!emailOk) return { ok: false, text: "Ingresá un email válido." };
-    if (!telOk) return { ok: false, text: "Ingresá un teléfono válido." };
-    if (!docOk) return { ok: false, text: "Ingresá un documento válido (mín. 6 caracteres)." };
+    if (!isValidName(cliente.nombre)) {
+      return { ok: false, text: "Ingresá tu nombre completo (solo letras)." };
+    }
+    if (!isValidEmail(cliente.email)) {
+      return { ok: false, text: "Ingresá un email válido." };
+    }
+    if (!isValidPhone(cliente.telefono)) {
+      return { ok: false, text: "Ingresá un teléfono válido (solo números)." };
+    }
+    if (!isValidDocument(cliente.documento)) {
+      return {
+        ok: false,
+        text: "Ingresá un documento válido (solo números, mínimo 6 dígitos).",
+      };
+    }
 
     return { ok: true };
   };
@@ -150,6 +136,13 @@ export default function Reservar() {
     return;
   }
 
+  const clienteNormalizado = {
+    nombre: cliente.nombre.trim(),
+    email: cliente.email.trim(),
+    telefono: cliente.telefono.trim(),
+    documento: cliente.documento.trim(),
+  };
+
   // (Opcional) Podés guardar un "hold" temporal si querés, pero para simplificar
   // solo navegamos con los datos. La reserva se consolidará post-pago.
 
@@ -158,6 +151,7 @@ export default function Reservar() {
       roomId: String(roomId),
       start: toYMD(startDate),
       end: toYMD(endDate),
+      cliente: clienteNormalizado,
     },
   });
 };
@@ -229,8 +223,10 @@ export default function Reservar() {
                   <Form.Control
                     value={cliente.nombre}
                     onChange={(e) =>
-                      setCliente((c) => ({ ...c, nombre: e.target.value }))
+                      setCliente((c) => ({ ...c, nombre: sanitizeName(e.target.value) }))
                     }
+                    inputMode="text"
+                    autoComplete="name"
                     required
                   />
                 </Col>
@@ -240,8 +236,9 @@ export default function Reservar() {
                     type="email"
                     value={cliente.email}
                     onChange={(e) =>
-                      setCliente((c) => ({ ...c, email: e.target.value }))
+                      setCliente((c) => ({ ...c, email: e.target.value.trim() }))
                     }
+                    autoComplete="email"
                     required
                   />
                 </Col>
@@ -250,9 +247,10 @@ export default function Reservar() {
                   <Form.Control
                     value={cliente.telefono}
                     onChange={(e) =>
-                      setCliente((c) => ({ ...c, telefono: e.target.value }))
+                      setCliente((c) => ({ ...c, telefono: sanitizePhone(e.target.value) }))
                     }
-                    placeholder="+54 9 11 1234 5678"
+                    placeholder="+5491112345678"
+                    inputMode="tel"
                     required
                   />
                 </Col>
@@ -261,9 +259,10 @@ export default function Reservar() {
                   <Form.Control
                     value={cliente.documento}
                     onChange={(e) =>
-                      setCliente((c) => ({ ...c, documento: e.target.value }))
+                      setCliente((c) => ({ ...c, documento: sanitizeNumeric(e.target.value) }))
                     }
                     placeholder="DNI / Pasaporte"
+                    inputMode="numeric"
                     required
                   />
                 </Col>

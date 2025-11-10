@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Container, Table, Button, Form, Row, Col, Alert, Badge } from "react-bootstrap";
 import NavBarUsuario from "../components/NavBarUsuario";
+import {sanitizeName, sanitizeAlphanumeric } from "../utils/validation";
 
 // Helpers seguros para leer/escribir localStorage
 const safeParse = (key, fallback) => {
@@ -183,14 +184,14 @@ export default function Admin() {
               <Form.Control
                 placeholder="Nombre completo"
                 value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
+                onChange={(e) => setNombre(sanitizeName(e.target.value))}
               />
             </Col>
             <Col md={3}>
               <Form.Control
                 placeholder="Usuario"
                 value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
+                onChange={(e) => setUsuario(sanitizeAlphanumeric(e.target.value))}
               />
             </Col>
             <Col md={3}>

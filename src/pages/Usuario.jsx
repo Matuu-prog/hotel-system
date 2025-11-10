@@ -7,6 +7,12 @@ import NavbarUsuario from "../components/NavBarUsuario";
 import CarouselHotel from "../components/CarouselHotel";
 import { Container, Row, Col, Form, Button } from "react-bootstrap";
 import InfoExtraHotel from "../components/InfoExtraHotel";
+import {
+  sanitizeName,
+  sanitizeMessage,
+  isValidName,
+  isValidEmail,
+} from "../utils/validation";
 
 
 function Usuario() {
@@ -20,7 +26,13 @@ function Usuario() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const sanitizers = {
+      nombre: sanitizeName,
+      email: (val) => val.trim(),
+      mensaje: sanitizeMessage,
+    };
+    const sanitizer = sanitizers[name] || ((val) => val);
+    setFormData((prev) => ({ ...prev, [name]: sanitizer(value) }));
   };
 
   const handleSubmit = (event) => {
@@ -34,6 +46,16 @@ function Usuario() {
 
     if (!nombre || !email || !mensaje) {
       setMensajeError("Por favor completá todos los campos antes de enviar.");
+      return;
+    }
+
+    if (!isValidName(nombre)) {
+      setMensajeError("Ingresá un nombre válido (solo letras).");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setMensajeError("Ingresá un correo válido.");
       return;
     }
 

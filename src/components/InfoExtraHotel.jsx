@@ -62,7 +62,7 @@ export default function InfoExtraHotel() {
     <div className="my-5">
       <h3 className="text-center mb-4 fw-semibold">
         Datos que te pueden interesar para una perfecta estadía en Salta, <br />
-        en el maravilloso <span className="text-primary">Hotel Paradise</span>
+        en el maravilloso <span className="text-primary">Hotel Paradise 🏖️</span>
       </h3>
 
       <Row className="justify-content-center g-4">

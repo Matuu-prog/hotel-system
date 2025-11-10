@@ -1,7 +1,18 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { Container, Card, Form, Button } from "react-bootstrap";
+import { Container, Card, Form, Button, Alert } from "react-bootstrap";
 import NavbarUsuario from "../components/NavBarUsuario";
+import { ensureHabitaciones } from "../utils/habitaciones";
+import {
+  sanitizeName,
+  sanitizeCardNumber,
+  sanitizeCardExpiry,
+  sanitizeCVV,
+  isValidName,
+  isValidCardNumber,
+  isValidExpiry,
+  isValidCVV,
+} from "../utils/validation";
 
 export default function Pago() {
   const { state } = useLocation();
@@ -17,8 +28,12 @@ export default function Pago() {
   }, [state, session]);
 
   const [reserva, setReserva] = useState(null);
+  const [habitaciones, setHabitaciones] = useState([]);
 
   useEffect(() => {
+    const disponibles = ensureHabitaciones();
+    setHabitaciones(disponibles);
+
     const reservasGuardadas = JSON.parse(localStorage.getItem("reservas")) || [];
 
     if (!reservaId) {
@@ -45,13 +60,23 @@ export default function Pago() {
     cvv: "",
   });
 
-  const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    const sanitizers = {
+      titular: sanitizeName,
+      numero: sanitizeCardNumber,
+      vencimiento: sanitizeCardExpiry,
+      cvv: sanitizeCVV,
+    };
+    const sanitizer = sanitizers[name] || ((val) => val);
+    setForm((f) => ({ ...f, [name]: sanitizer(value) }));
+  };
 
   const validar = () => {
-    if (!form.titular.trim()) return "Ingresá el titular";
-    if (!/^\d{13,19}$/.test(form.numero)) return "Número de tarjeta inválido";
-    if (!/^\d{2}\/\d{2}$/.test(form.vencimiento)) return "Vencimiento inválido (MM/AA)";
-    if (!/^\d{3,4}$/.test(form.cvv)) return "CVV inválido";
+    if (!isValidName(form.titular)) return "Ingresá el titular (solo letras).";
+    if (!isValidCardNumber(form.numero)) return "Número de tarjeta inválido";
+    if (!isValidExpiry(form.vencimiento)) return "Vencimiento inválido (MM/AA)";
+    if (!isValidCVV(form.cvv)) return "CVV inválido";
     return "";
   };
 
@@ -72,6 +97,26 @@ export default function Pago() {
     const fechas = rangeToArray(reserva.start, reserva.end);
     return Math.max(1, fechas.length - 1);
   }, [reserva]);
+
+  const precioPorNoche = useMemo(() => {
+    if (!reserva) return 0;
+    const habitacion = habitaciones.find((h) => String(h.id) === String(reserva.roomId));
+    if (habitacion) {
+      return Number(habitacion.precio ?? habitacion.tarifa ?? 0);
+    }
+    if (reserva?.pago?.monto && noches > 0) {
+      return Math.round(reserva.pago.monto / noches);
+    }
+    return 0;
+  }, [habitaciones, reserva, noches]);
+
+  const subtotalEstimado = useMemo(() => {
+    if (!reserva) return 0;
+    if (reserva?.pago?.monto && reserva.pago.monto > 0) {
+      return reserva.pago.monto;
+    }
+    return (precioPorNoche || 0) * (noches || 1);
+  }, [reserva, precioPorNoche, noches]);
 
 
   const onSubmit = (e) => {
@@ -96,21 +141,23 @@ export default function Pago() {
       return;
     }
 
-    const habitaciones = JSON.parse(localStorage.getItem("habitaciones")) || [];
- const habitacionIdx = habitaciones.findIndex((h) => String(h.id) === String(reserva.roomId));
+    const habitacionesActualizadas = ensureHabitaciones();
+    const habitacionIdx = habitacionesActualizadas.findIndex(
+      (h) => String(h.id) === String(reserva.roomId)
+    );
     const fechas = rangeToArray(reserva.start, reserva.end);
 
     let roomNombre = reserva.roomName || `Habitación ${reserva.roomId}`;
-    let precioUnitario = 0;
+    let precioUnitario = precioPorNoche;
 
     if (habitacionIdx !== -1) {
-      const habitacion = habitaciones[habitacionIdx];
+      const habitacion = habitacionesActualizadas[habitacionIdx];
       roomNombre = habitacion?.nombre || roomNombre;
       precioUnitario = Number(habitacion?.precio ?? habitacion?.tarifa ?? 0);
 
       const prev = new Set(habitacion.reservedDates || []);
       fechas.forEach((d) => prev.add(d));
-       habitaciones[habitacionIdx] = {
+      habitacionesActualizadas[habitacionIdx] = {
         ...habitacion,
         nombre: roomNombre,
         reservedDates: Array.from(prev),
@@ -124,7 +171,8 @@ export default function Pago() {
           },
         },
       };
-      localStorage.setItem("habitaciones", JSON.stringify(habitaciones));
+      localStorage.setItem("habitaciones", JSON.stringify(habitacionesActualizadas));
+      setHabitaciones(habitacionesActualizadas);
     }
 
     const montoCalculado =
@@ -201,22 +249,61 @@ export default function Pago() {
               Cliente: {reserva.cliente?.nombre} — {reserva.cliente?.email}
             </p>
 
+            <Alert variant="light" className="border">
+              <div>
+                <strong>Tarifa por noche:</strong> ${precioPorNoche.toLocaleString("es-AR")}
+              </div>
+              <div>
+                <strong>Subtotal estimado:</strong> ${subtotalEstimado.toLocaleString("es-AR")}
+              </div>
+            </Alert>
+
             <Form onSubmit={onSubmit}>
               <Form.Group className="mb-3">
                 <Form.Label>Titular</Form.Label>
-                <Form.Control name="titular" value={form.titular} onChange={onChange} required />
+                <Form.Control
+                  name="titular"
+                  value={form.titular}
+                  onChange={onChange}
+                  required
+                  autoComplete="cc-name"
+                />
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>Número de tarjeta</Form.Label>
-                <Form.Control name="numero" value={form.numero} onChange={onChange} placeholder="Solo números" required />
+                <Form.Control
+                  name="numero"
+                  value={form.numero}
+                  onChange={onChange}
+                  placeholder="Solo números"
+                  inputMode="numeric"
+                  autoComplete="cc-number"
+                  required
+                />
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>Vencimiento (MM/AA)</Form.Label>
-                <Form.Control name="vencimiento" value={form.vencimiento} onChange={onChange} placeholder="MM/AA" required />
+                <Form.Control
+                  name="vencimiento"
+                  value={form.vencimiento}
+                  onChange={onChange}
+                  placeholder="MM/AA"
+                  inputMode="numeric"
+                  autoComplete="cc-exp"
+                  required
+                />
               </Form.Group>
               <Form.Group className="mb-4">
                 <Form.Label>CVV</Form.Label>
-                <Form.Control name="cvv" value={form.cvv} onChange={onChange} placeholder="3 o 4 dígitos" required />
+                <Form.Control
+                  name="cvv"
+                  value={form.cvv}
+                  onChange={onChange}
+                  placeholder="3 o 4 dígitos"
+                  inputMode="numeric"
+                  autoComplete="cc-csc"
+                  required
+                />
               </Form.Group>
 
               <div className="d-flex gap-2">

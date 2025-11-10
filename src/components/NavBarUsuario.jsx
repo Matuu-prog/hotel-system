@@ -28,7 +28,7 @@ function NavbarUsuario() {
   return (
     <Navbar bg="dark" variant="dark" expand="lg" sticky="top">
       <Container>
-        <Navbar.Brand as={Link} to="/">Hotel Mirador</Navbar.Brand>
+        <Navbar.Brand as={Link} to="/">Hotel Paradise 🏖️</Navbar.Brand>
         <Navbar.Toggle aria-controls="nav" />
         <Navbar.Collapse id="nav">
           <Nav className="ms-auto align-items-center">

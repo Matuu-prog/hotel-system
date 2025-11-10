@@ -2,12 +2,41 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { Container, Card, Form, Button, Alert, Row, Col } from "react-bootstrap";
 import NavbarUsuario from "../components/NavBarUsuario";
+import { ensureHabitaciones } from "../utils/habitaciones";
+import {
+  sanitizeName,
+  sanitizePhone,
+  sanitizeNumeric,
+  isValidName,
+  isValidEmail,
+  isValidPhone,
+  isValidDocument,
+} from "../utils/validation";
+
+const toYMD = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate()
+  ).padStart(2, "0")}`;
+};
+
+const rangeToArray = (start, end) => {
+  if (!start || !end) return [];
+  const out = [];
+  let current = new Date(start);
+  const last = new Date(end);
+  while (current <= last) {
+    out.push(toYMD(current));
+    current.setDate(current.getDate() + 1);
+  }
+  return out;
+};
 
 export default function InfoCliente() {
   const { state } = useLocation() || {};
   const navigate = useNavigate();
 
-  // Si llegamos sin state, volvemos a reservar
   useEffect(() => {
     if (!state?.roomId || !state?.start || !state?.end) {
       navigate("/habitaciones");
@@ -17,60 +46,44 @@ export default function InfoCliente() {
   const [habitaciones, setHabitaciones] = useState([]);
   const [msg, setMsg] = useState({ type: "", text: "" });
 
-  // Datos del cliente
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [dni, setDni] = useState("");
   const [telefono, setTelefono] = useState("");
 
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("habitaciones")) || [];
+    const data = ensureHabitaciones();
     setHabitaciones(data);
   }, []);
 
   const room = useMemo(
     () => habitaciones.find((h) => String(h.id) === String(state?.roomId)),
-    [habitaciones, state]
+    [habitaciones, state?.roomId]
   );
 
-const toYMD = (value) => {
-    const date = new Date(value);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
-      date.getDate()
-    ).padStart(2, "0")}`;
-  };
+  const noches = useMemo(() => {
+    const fechas = rangeToArray(state?.start, state?.end);
+    return Math.max(1, fechas.length - 1);
+  }, [state?.start, state?.end]);
 
-  const rangeToArray = (start, end) => {
-    if (!start || !end) return [];
-    const out = [];
-    let current = new Date(start);
-    const last = new Date(end);
-    while (current <= last) {
-      out.push(toYMD(current));
-      current.setDate(current.getDate() + 1);
-    }
-    return out;
-  };
+  const precioBase = Number(room?.precio ?? room?.tarifa ?? 0);
+  const subtotal = precioBase * noches;
 
   const validar = () => {
-    if (!nombre.trim() || !email.trim() || !dni.trim() || !telefono.trim()) {
-      setMsg({ type: "danger", text: "Completá todos los campos." });
+    if (!isValidName(nombre)) {
+      setMsg({ type: "danger", text: "Ingresá un nombre válido (solo letras)." });
       return false;
     }
-    // Validaciones simples
-    const emailOK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    if (!emailOK) {
+    if (!isValidEmail(email)) {
       setMsg({ type: "danger", text: "Ingresá un email válido." });
       return false;
     }
-    const dniOK = /^\d{6,10}$/.test(dni);
-    if (!dniOK) {
+    if (!isValidDocument(dni)) {
       setMsg({ type: "danger", text: "Ingresá un DNI válido (solo números)." });
       return false;
     }
-    const telOK = /^[\d\s()+-]{6,20}$/.test(telefono);
-    if (!telOK) {
-      setMsg({ type: "danger", text: "Ingresá un teléfono válido." });
+    if (!isValidPhone(telefono)) {
+      setMsg({ type: "danger", text: "Ingresá un teléfono válido (solo números)." });
       return false;
     }
     return true;
@@ -81,23 +94,27 @@ const toYMD = (value) => {
     setMsg({ type: "", text: "" });
     if (!validar()) return;
 
-    // Creamos un registro de reserva en "reservas" con estado pendiente de pago
     const reservas = JSON.parse(localStorage.getItem("reservas")) || [];
     const roomName = room?.nombre || `Habitación ${state.roomId}`;
-    const noches = Math.max(1, rangeToArray(state.start, state.end).length - 1);
-    const precioBase = Number(room?.precio ?? room?.tarifa ?? 0);
-    const montoEstimado = precioBase * noches;
+
+    const clienteNormalizado = {
+      nombre: nombre.trim(),
+      email: email.trim(),
+      dni: dni.trim(),
+      telefono: telefono.trim(),
+    };
+
     const nueva = {
       id: Date.now(),
       roomId: String(state.roomId),
       roomName,
       start: state.start,
       end: state.end,
-      cliente: { nombre, email, dni, telefono },
+      cliente: clienteNormalizado,
       pago: {
         estado: "pendiente",
         metodo: null,
-        monto: montoEstimado,
+        monto: subtotal,
         fecha: null,
         operador: "Reserva online",
       },
@@ -111,8 +128,8 @@ const toYMD = (value) => {
       window.sessionStorage.setItem("reservaEnProceso", String(nueva.id));
     }
 
-    // Navegar a pago con la reserva creada
     navigate("/pago", { state: { reservaId: nueva.id } });
+  };
 
   return (
     <>
@@ -124,8 +141,15 @@ const toYMD = (value) => {
 
             {room && (
               <Alert variant="info">
-                <div><strong>Habitación:</strong> {room.nombre}</div>
-                <div><strong>Estadía:</strong> {state?.start} → {state?.end}</div>
+                <div>
+                  <strong>Habitación:</strong> {room.nombre} — ${precioBase.toLocaleString("es-AR")} por noche
+                </div>
+                <div>
+                  <strong>Estadía:</strong> {state?.start} → {state?.end} ({noches} noche(s))
+                </div>
+                <div>
+                  <strong>Subtotal estimado:</strong> ${subtotal.toLocaleString("es-AR")}
+                </div>
               </Alert>
             )}
 
@@ -135,25 +159,50 @@ const toYMD = (value) => {
               <Row className="g-3">
                 <Col md={6}>
                   <Form.Label>Nombre completo</Form.Label>
-                  <Form.Control value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+                  <Form.Control
+                    value={nombre}
+                    onChange={(e) => setNombre(sanitizeName(e.target.value))}
+                    required
+                    autoComplete="name"
+                  />
                 </Col>
                 <Col md={6}>
                   <Form.Label>Email</Form.Label>
-                  <Form.Control type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <Form.Control
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value.trim())}
+                    required
+                    autoComplete="email"
+                  />
                 </Col>
                 <Col md={6}>
                   <Form.Label>DNI</Form.Label>
-                  <Form.Control value={dni} onChange={(e) => setDni(e.target.value)} required />
+                  <Form.Control
+                    value={dni}
+                    onChange={(e) => setDni(sanitizeNumeric(e.target.value))}
+                    required
+                    inputMode="numeric"
+                  />
                 </Col>
                 <Col md={6}>
                   <Form.Label>Teléfono</Form.Label>
-                  <Form.Control value={telefono} onChange={(e) => setTelefono(e.target.value)} required />
+                  <Form.Control
+                    value={telefono}
+                    onChange={(e) => setTelefono(sanitizePhone(e.target.value))}
+                    required
+                    inputMode="tel"
+                  />
                 </Col>
               </Row>
 
               <div className="mt-4 d-flex gap-2">
-                <Button type="submit" variant="primary">Continuar a pago</Button>
-                <Button variant="secondary" onClick={() => navigate(-1)}>Volver</Button>
+                <Button type="submit" variant="primary">
+                  Continuar a pago
+                </Button>
+                <Button variant="secondary" onClick={() => navigate(-1)}>
+                  Volver
+                </Button>
               </div>
             </Form>
           </Card.Body>
@@ -161,5 +210,4 @@ const toYMD = (value) => {
       </Container>
     </>
   );
-  }
 }

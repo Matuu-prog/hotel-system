@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Button, Container, Card } from "react-bootstrap";
+import { sanitizeAlphanumeric } from "../utils/validation";
 
 function OperadorLogin() {
   const [usuario, setUsuario] = useState("");
@@ -35,7 +36,7 @@ function OperadorLogin() {
               <Form.Control
                 type="text"
                 value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
+                 onChange={(e) => setUsuario(sanitizeAlphanumeric(e.target.value))}
                 placeholder="Ingresa tu usuario"
                 required
               />
