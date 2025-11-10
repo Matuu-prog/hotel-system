@@ -1,77 +1,113 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  color-scheme: dark;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
+  background-color: #05070a;
+  color: #f4f6fa;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
   min-height: 100vh;
+  background: radial-gradient(circle at top, #0b121f 0%, #05070a 45%, #040507 100%);
+  color: #f4f6fa;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+#root {
+  min-height: 100vh;
+  background: linear-gradient(160deg, rgba(8, 12, 20, 0.9), rgba(5, 7, 11, 0.95));
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+a {
+ color: #80c7ff;
+  text-decoration: none;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+a:hover {
+  color: #b4dcff;
 }
 
-.role-card {
-  transition: transform 0.2s, box-shadow 0.3s;
+h1,
+ h2,
+ h3,
+ h4,
+ h5,
+ h6 {
+  color: inherit;
+  margin-top: 0;
 }
 
-.role-card:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+p {
+  color: rgba(244, 246, 250, 0.88);
+}
+
+.card {
+  background-color: rgba(18, 26, 38, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: inherit;
+  backdrop-filter: blur(6px);
+}
+.card.bg-light,
+.card.bg-white,
+.card.bg-body {
+  background-color: rgba(24, 32, 46, 0.95) !important;
+  color: #f4f6fa;
+}
+.text-muted {
+  color: rgba(204, 214, 230, 0.75) !important;
+}
+
+.table {
+  color: inherit;
+  background-color: rgba(18, 26, 38, 0.9);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.table > :not(caption) > * > * {
+  background-color: transparent;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+
+.form-control,
+.form-select,
+.input-group-text {
+  background-color: rgba(14, 20, 30, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f4f6fa;
+}
+
+.form-control::placeholder,
+.form-select::placeholder {
+  color: rgba(244, 246, 250, 0.55);
+}
+
+.modal-content,
+.offcanvas {
+  background-color: rgba(15, 21, 31, 0.96);
+  color: #f4f6fa;
+}
+
+.btn-light {
+  background-color: #f4f6fa;
+  color: #0c111c;
+  border-color: transparent;
+}
+
+.btn-outline-light {
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #f4f6fa;
+}
+
+.btn-outline-light:hover,
+.btn-light:hover {
+  opacity: 0.92;
 }
