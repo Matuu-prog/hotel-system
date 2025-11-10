@@ -29,6 +29,16 @@ const rangeToArray = (start, end) => {
   return out;
 };
 
+const formatoFechaHora = (iso) => {
+  if (!iso) return "-";
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return iso;
+  return fecha.toLocaleString("es-AR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+};
+
 // LocalStorage helpers
 const load = (k, fallback) => {
   try {
@@ -59,6 +69,8 @@ export default function Operador() {
   const [habitaciones, setHabitaciones] = useState([]);
   const [reservas, setReservas] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [mensajes, setMensajes] = useState([]);
+
 
   // UI
   const [active, setActive] = useState("reservas"); // reservas | pagos | gestion
@@ -66,6 +78,9 @@ export default function Operador() {
   const [reservaSel, setReservaSel] = useState(null);
   const [filtroPago, setFiltroPago] = useState("todas"); // todas | pendiente | pagado
   const [busqueda, setBusqueda] = useState("");
+  const [mensajeSel, setMensajeSel] = useState(null);
+  const [respuesta, setRespuesta] = useState(""); 
+
 
   useEffect(() => {
     // Habitaciones iniciales si no existen
@@ -104,6 +119,25 @@ export default function Operador() {
 
     // Logs
     setLogs(load("logs", []));
+
+    // Mensajes de contacto
+    setMensajes(load("mensajesContacto", []));
+  }, []);
+
+  useEffect(() => {
+    const handleStorage = (event) => {
+      if (event.key === "mensajesContacto") {
+        try {
+          const nuevos = event.newValue ? JSON.parse(event.newValue) : [];
+          setMensajes(nuevos);
+        } catch {
+          setMensajes([]);
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+
   }, []);
 
   const guardarReservas = (lista) => {
@@ -113,6 +147,10 @@ export default function Operador() {
   const guardarHabitaciones = (lista) => {
     setHabitaciones(lista);
     save("habitaciones", lista);
+  };
+  const guardarMensajes = (lista) => {
+    setMensajes(lista);
+    save("mensajesContacto", lista);
   };
   const pushLog = (accion, extra = {}) => {
     const entrada = {
@@ -154,6 +192,56 @@ export default function Operador() {
     () => reservas.filter((r) => (r.pago?.estado || "pendiente") === "pagado"),
     [reservas]
   );
+
+  const mensajesPendientes = useMemo(
+    () => mensajes.filter((m) => !(m.respuesta || "").trim()).length,
+    [mensajes]
+  );
+
+  const seleccionarMensaje = (mensaje) => {
+    setMensajeSel(mensaje);
+    setRespuesta(mensaje?.respuesta || "");
+  };
+
+  const responderMensaje = (event) => {
+    event.preventDefault();
+    if (!mensajeSel) return;
+    const texto = respuesta.trim();
+    if (!texto) return;
+
+    const listaActualizada = mensajes.map((m) =>
+      m.id === mensajeSel.id
+        ? {
+            ...m,
+            respuesta: texto,
+            respondidoEn: new Date().toISOString(),
+            respondidoPor: usuarioActual?.nombre || "Operador",
+          }
+        : m
+    );
+    guardarMensajes(listaActualizada);
+    const actualizado = listaActualizada.find((m) => m.id === mensajeSel.id) || null;
+    setMensajeSel(actualizado);
+    setRespuesta(actualizado?.respuesta || "");
+  };
+
+  const limpiarRespuesta = () => {
+    if (!mensajeSel) return;
+    const listaActualizada = mensajes.map((m) =>
+      m.id === mensajeSel.id
+        ? {
+            ...m,
+            respuesta: "",
+            respondidoEn: null,
+            respondidoPor: null,
+          }
+        : m
+    );
+    guardarMensajes(listaActualizada);
+    const actualizado = listaActualizada.find((m) => m.id === mensajeSel.id) || null;
+    setMensajeSel(actualizado);
+    setRespuesta("");
+  };
 
   // Acciones
   const abrirDetalles = (reserva) => {
@@ -249,6 +337,13 @@ export default function Operador() {
                 </ListGroup.Item>
                 <ListGroup.Item
                   action
+                  active={active === "mensajes"}
+                  onClick={() => setActive("mensajes")}
+                >
+                  ✉️ Mensajes
+                </ListGroup.Item>
+                <ListGroup.Item
+                  action
                   active={active === "gestion"}
                   onClick={() => setActive("gestion")}
                 >
@@ -272,6 +367,12 @@ export default function Operador() {
                 <div className="d-flex justify-content-between mt-2">
                   <span>Total reservas</span>
                   <Badge bg="secondary">{reservas.length}</Badge>
+                </div>
+                <div className="d-flex justify-content-between mt-2">
+                  <span>Mensajes pendientes</span>
+                  <Badge bg={mensajesPendientes > 0 ? "info" : "secondary"}>
+                    {mensajesPendientes}
+                  </Badge>
                 </div>
               </Card.Body>
             </Card>
@@ -425,6 +526,118 @@ export default function Operador() {
                     </Table>
                   </Card.Body>
                 </Card>
+              </>
+            )}
+
+             {/* MENSAJES */}
+            {active === "mensajes" && (
+              <>
+                <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
+                  <h4 className="m-0">Mensajes de contacto</h4>
+                  <Badge bg="secondary">{mensajes.length}</Badge>
+                  {mensajesPendientes > 0 ? (
+                    <Badge bg="warning" text="dark">{`${mensajesPendientes} pendientes`}</Badge>
+                  ) : (
+                    <Badge bg="success">Todos respondidos</Badge>
+                  )}
+                </div>
+                {mensajes.length === 0 ? (
+                  <Card className="shadow-sm">
+                    <Card.Body>No hay mensajes recibidos por el momento.</Card.Body>
+                  </Card>
+                ) : (
+                  <Row className="g-3">
+                    <Col lg={5}>
+                      <Card className="shadow-sm h-100">
+                        <Card.Header className="fw-semibold">Bandeja de entrada</Card.Header>
+                        <ListGroup variant="flush" className="flex-grow-1 overflow-auto" style={{ maxHeight: "60vh" }}>
+                          {mensajes.map((msg) => (
+                            <ListGroup.Item
+                              key={msg.id}
+                              action
+                              active={mensajeSel?.id === msg.id}
+                              onClick={() => seleccionarMensaje(msg)}
+                              className="d-flex justify-content-between align-items-start"
+                            >
+                              <div>
+                                <div className="fw-semibold">{msg.nombre}</div>
+                                <div className="small text-muted">{msg.email}</div>
+                                <div className="small text-muted">{formatoFechaHora(msg.enviadoEn)}</div>
+                              </div>
+                              <Badge bg={(msg.respuesta || "").trim() ? "success" : "secondary"}>
+                                {(msg.respuesta || "").trim() ? "Respondido" : "Pendiente"}
+                              </Badge>
+                            </ListGroup.Item>
+                          ))}
+                        </ListGroup>
+                      </Card>
+                    </Col>
+                    <Col lg={7}>
+                      <Card className="shadow-sm h-100">
+                        <Card.Header className="fw-semibold">Detalle del mensaje</Card.Header>
+                        <Card.Body className="d-flex flex-column">
+                          {mensajeSel ? (
+                            <>
+                              <div className="mb-3">
+                                <div className="fw-semibold">{mensajeSel.nombre}</div>
+                                <div className="text-muted">{mensajeSel.email}</div>
+                                <div className="small text-muted mt-1">
+                                  Enviado: {formatoFechaHora(mensajeSel.enviadoEn)}
+                                </div>
+                              </div>
+                              <div className="mb-3">
+                                <div className="fw-semibold mb-1">Mensaje</div>
+                                <Card className="bg-light border-0">
+                                  <Card.Body className="py-2">{mensajeSel.mensaje}</Card.Body>
+                                </Card>
+                              </div>
+                              {mensajeSel.respuesta && (
+                                <div className="mb-3">
+                                  <div className="fw-semibold mb-1 d-flex align-items-center gap-2">
+                                    Respuesta enviada
+                                    <Badge bg="success">{formatoFechaHora(mensajeSel.respondidoEn)}</Badge>
+                                  </div>
+                                  <div className="small text-muted mb-2">
+                                    Por: {mensajeSel.respondidoPor || "Operador"}
+                                  </div>
+                                  <Card className="bg-light border-0">
+                                    <Card.Body className="py-2">{mensajeSel.respuesta}</Card.Body>
+                                  </Card>
+                                </div>
+                              )}
+                              <Form onSubmit={responderMensaje} className="mt-auto">
+                                <Form.Group className="mb-3" controlId="respuestaContacto">
+                                  <Form.Label>Escribir respuesta</Form.Label>
+                                  <Form.Control
+                                    as="textarea"
+                                    rows={4}
+                                    value={respuesta}
+                                    onChange={(e) => setRespuesta(e.target.value)}
+                                    placeholder="Redactá tu respuesta para el cliente"
+                                  />
+                                </Form.Group>
+                                <div className="d-flex justify-content-between gap-2">
+                                  {mensajeSel.respuesta && (
+                                    <Button variant="outline-secondary" type="button" onClick={limpiarRespuesta}>
+                                      Limpiar respuesta
+                                    </Button>
+                                  )}
+                                  <div className="ms-auto d-flex gap-2">
+                                    <Button variant="primary" type="submit" disabled={!respuesta.trim()}>
+                                      Guardar respuesta
+                                    </Button>
+                                  </div>
+                                </div>
+                              </Form>
+                            </>
+                          ) : (
+                            <div className="text-muted">Seleccioná un mensaje para ver los detalles.</div>
+                          )}
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  </Row>
+                )}
               </>
             )}
 
