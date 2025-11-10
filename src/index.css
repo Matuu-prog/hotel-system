@@ -70,8 +70,8 @@ p {
   background-color: rgba(24, 32, 46, 0.95) !important;
   color: #f4f6fa;
 }
-.text-muted {
-  color: rgba(204, 214, 230, 0.75) !important;
+small.text-muted {
+  color: rgba(255, 255, 255, 0.75) !important;
 }
 
 .table {
@@ -149,4 +149,124 @@ p {
   color: #ffffff;
   border-color: transparent;
   box-shadow: 0 10px 24px rgba(73, 124, 216, 0.35);
+}
+
+/* 🎨 Personalización solo para los títulos h4 */
+h4 {
+  color: #ffffff !important; /* blanco pleno */
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.08); /* brillo suave opcional */
+}
+
+/* 🗓️ Contenedor de calendario y resumen */
+.d-flex.flex-column.flex-md-row.gap-3 {
+  align-items: center;
+  justify-content: center;
+  gap: 2rem; /* más espacio entre calendario y cuadro */
+  flex-wrap: wrap; /* por si se achica la pantalla */
+}
+
+/* Centrar el calendario en su contenedor */
+.react-datepicker {
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 📋 Cuadro de resumen blanco con sombras suaves */
+.card.bg-light.border-0.h-100 {
+  background-color: #ffffff !important;
+  color: #0b121f !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  min-width: 240px; /* asegura que no se achique demasiado */
+  max-width: 280px;
+}
+
+/* Texto oscuro dentro del cuadro */
+.card.bg-light.border-0.h-100 .fw-semibold,
+.card.bg-light.border-0.h-100 div,
+.card.bg-light.border-0.h-100 .small {
+  color: #0b121f !important;
+}
+
+/* 🎨 Opcional: fondo blanco también para el calendario */
+.react-datepicker,
+.react-datepicker__month-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Alinear los meses del calendario mejor visualmente */
+.react-datepicker__month-container {
+  margin: 0 8px;
+}
+/* 🧭 Centrar el bloque completo (título, calendario y resumen) */
+.reserva-fechas-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* Centrar el título "Seleccionar fechas" */
+.reserva-fechas-container h4,
+.reserva-fechas-container label,
+.reserva-fechas-container .form-label {
+  text-align: center;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+/* 🗓️ Contenedor del calendario */
+.react-datepicker {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+}
+
+/* 📋 Resumen debajo del calendario */
+.resumen-fechas-card {
+  margin-top: 1.5rem;
+  background-color: #ffffff !important;
+  color: #0b121f !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 320px;
+  padding: 1rem;
+}
+
+/* Texto oscuro dentro del resumen */
+.resumen-fechas-card div,
+.resumen-fechas-card .fw-semibold,
+.resumen-fechas-card .small {
+  color: #0b121f !important;
+}
+
+/* Opcional: calendario con sombra más sutil */
+.react-datepicker,
+.react-datepicker__month-container {
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilo solo para la tarjeta de habitación seleccionada en el panel del operador */
+.card-habitacion-seleccionada {
+  background-color: #ffffff !important;
+  color: #0b121f !important;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Texto dentro del card */
+.card-habitacion-seleccionada .fw-semibold,
+.card-habitacion-seleccionada .small,
+.card-habitacion-seleccionada .fw-bold {
+  color: #0b121f !important;
 }

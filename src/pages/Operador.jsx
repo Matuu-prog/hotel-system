@@ -23,6 +23,7 @@ import {
   sanitizeNumeric,
   sanitizeCardNumber,
   sanitizeCardExpiry,
+  sanitizeDecimal,
   sanitizeCVV,
   isValidName,
   isValidEmail,
@@ -777,7 +778,7 @@ export default function Operador() {
                           </Form.Group>
 
                           {habitacionSeleccionada ? (
-                            <Card className="bg-light border-0">
+                            <Card className="card-habitacion-seleccionada border-0-light border-0">
                               <Card.Body className="py-3">
                                 <div className="fw-semibold">{habitacionSeleccionada.nombre}</div>
                                 <div className="small text-muted">Piso {habitacionSeleccionada.piso || "-"}</div>
@@ -800,33 +801,32 @@ export default function Operador() {
                           )}
                         </Col>
                         <Col md={7}>
-                          <Form.Label>Seleccionar fechas</Form.Label>
-                          <div className="d-flex flex-column flex-md-row gap-3">
-                            <DatePicker
-                              selectsRange
-                              startDate={formReserva.start}
-                              endDate={formReserva.end}
-                              onChange={onFechasReservaChange}
-                              minDate={new Date()}
-                              excludeDates={fechasNoDisponibles}
-                              inline
-                              monthsShown={2}
-                              shouldCloseOnSelect={false}
-                              dateFormat="dd/MM/yyyy"
-                            />
-                            <div className="flex-grow-1">
-                              <Card className="bg-light border-0 h-100">
-                                <Card.Body className="small">
-                                  <div className="fw-semibold mb-2">Resumen de fechas</div>
-                                  <div>Ingreso: {formReserva.start ? ymd(formReserva.start) : "-"}</div>
-                                  <div>Salida: {formReserva.end ? ymd(formReserva.end) : "-"}</div>
-                                  <div>Duración: {nochesNuevaReserva > 0 ? `${nochesNuevaReserva} noche(s)` : "-"}</div>
-                                  <div className="mt-2">
-                                    Las fechas en gris no están disponibles para esta habitación.
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
+                       <Form.Label>Seleccionar fechas</Form.Label>
+<div className="reserva-fechas-container">
+  <DatePicker
+    selectsRange
+    startDate={formReserva.start}
+    endDate={formReserva.end}
+    onChange={onFechasReservaChange}
+    minDate={new Date()}
+    excludeDates={fechasNoDisponibles}
+    inline
+    monthsShown={2}
+    shouldCloseOnSelect={false}
+    dateFormat="dd/MM/yyyy"
+  />
+
+  <Card className="resumen-fechas-card">
+    <Card.Body className="small">
+      <div className="fw-semibold mb-2">Resumen de fechas</div>
+      <div>Ingreso: {formReserva.start ? ymd(formReserva.start) : "-"}</div>
+      <div>Salida: {formReserva.end ? ymd(formReserva.end) : "-"}</div>
+      <div>Duración: {nochesNuevaReserva > 0 ? `${nochesNuevaReserva} noche(s)` : "-"}</div>
+      <div className="mt-2">
+        Las fechas en gris no están disponibles para esta habitación.
+      </div>
+    </Card.Body>
+  </Card>
                           </div>
                         </Col>
                       </Row>
@@ -1107,7 +1107,7 @@ export default function Operador() {
                               </div>
                               <div className="mb-3">
                                 <div className="fw-semibold mb-1">Mensaje</div>
-                                <Card className="bg-light border-0">
+                                <Card className="bg-card-habitacion-seleccionada border-0 border-0">
                                   <Card.Body className="py-2">{mensajeSel.mensaje}</Card.Body>
                                 </Card>
                               </div>
@@ -1120,7 +1120,7 @@ export default function Operador() {
                                   <div className="small text-muted mb-2">
                                     Por: {mensajeSel.respondidoPor || "Operador"}
                                   </div>
-                                  <Card className="bg-light border-0">
+                                  <Card className="bg-light card-habitacion-seleccionada border-0-0">
                                     <Card.Body className="py-2">{mensajeSel.respuesta}</Card.Body>
                                   </Card>
                                 </div>
