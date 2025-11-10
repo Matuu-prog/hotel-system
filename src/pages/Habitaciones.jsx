@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Container, Card, Button, Row, Col, Modal } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import { Container, Card, Button, Row, Col, Modal, Carousel } from "react-bootstrap";
 import NavbarUsuario from "../components/NavBarUsuario";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import "./Habitaciones.css";
 
 function Habitaciones() {
   const [habitaciones, setHabitaciones] = useState([]);
@@ -93,47 +94,56 @@ function Habitaciones() {
     <>
       <NavbarUsuario />
 
-      <Container className="mt-4">
-        <h2 className="text-center mb-4">Habitaciones Disponibles</h2>
+      <Container className="mt-5 rooms-section">
+        <h2 className="mb-4 rooms-title">Habitaciones Disponibles</h2>
+        <Row className="gy-4">
+          {habitaciones.map((hab) => (
+            <Col key={hab.id} xs={12}>
+              <Card className="shadow-sm room-card">
+                <Row className="g-0 align-items-stretch">
+                  {/* Carrusel lateral con el mismo look & feel que Servicios */}
+                  <Col md={4} className="room-carousel-wrapper">
+                    <Carousel
+                      indicators={hab.imagenes.length > 1}
+                      controls={hab.imagenes.length > 1}
+                      interval={null}
+                      fade
+                      className="room-carousel"
+                    >
+                      {hab.imagenes.map((img, idx) => (
+                        <Carousel.Item key={idx}>
+                          <div className="room-image-wrapper">
+                            <img
+                              src={img}
+                              className="d-block w-100 room-image"
+                              alt={`Habitación ${hab.nombre} imagen ${idx + 1}`}
+                            />
+                          </div>
+                        </Carousel.Item>
+                      ))}
+                    </Carousel>
+                  </Col>
 
-        {habitaciones.map((hab) => (
-          <Card className="mb-4 shadow-sm" key={hab.id}>
-            <Row className="g-0">
-              {/* Carrusel lateral simple con Bootstrap */}
-              <Col md={4}>
-                <div id={`carousel-${hab.id}`} className="carousel slide" data-bs-ride="carousel">
-                  <div className="carousel-inner">
-                    {hab.imagenes.map((img, idx) => (
-                      <div className={`carousel-item ${idx === 0 ? "active" : ""}`} key={idx}>
-                        <img src={img} className="d-block w-100" alt={`Habitación ${hab.id}`} />
+                  {/* Descripción + botón */}
+                  <Col md={8} className="d-flex">
+                    <Card.Body className="d-flex flex-column justify-content-center room-info">
+                      <Card.Title>{hab.nombre}</Card.Title>
+                      <Card.Text>{hab.descripcion}</Card.Text>
+                      <Card.Text className="room-extra">
+                        <em>Seleccioná fechas para ver disponibilidad y tarifas.</em>
+                      </Card.Text>
+                      <div className="mt-3">
+                        <Button variant="primary" onClick={() => handleReservar(hab)}>
+                          Reservar
+                        </Button>
                       </div>
-                    ))}
-                  </div>
-                  <button className="carousel-control-prev" type="button" data-bs-target={`#carousel-${hab.id}`} data-bs-slide="prev">
-                    <span className="carousel-control-prev-icon" aria-hidden="true"></span>
-                  </button>
-                  <button className="carousel-control-next" type="button" data-bs-target={`#carousel-${hab.id}`} data-bs-slide="next">
-                    <span className="carousel-control-next-icon" aria-hidden="true"></span>
-                  </button>
-                </div>
-              </Col>
-
-              {/* Descripción + botón */}
-              <Col md={8} className="p-3">
-                <Card.Body>
-                  <Card.Title>{hab.nombre}</Card.Title>
-                  <Card.Text>{hab.descripcion}</Card.Text>
-                  <Card.Text>
-                    <em>Información de reserva pendiente de diseño...</em>
-                  </Card.Text>
-                  <Button variant="primary" onClick={() => handleReservar(hab)}>
-                    Reservar
-                  </Button>
-                </Card.Body>
-              </Col>
-            </Row>
-          </Card>
-        ))}
+                  </Card.Body>
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
+          ))}
+        </Row>
       </Container>
 
       {/* Modal de selección de fechas */}

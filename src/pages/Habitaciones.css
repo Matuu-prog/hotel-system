@@ -1,0 +1,118 @@
+.rooms-section {
+  padding-bottom: 2rem;
+}
+
+.rooms-title {
+  color: #f2f6ff;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-shadow: 0 0 12px rgba(120, 177, 255, 0.35);
+}
+
+.room-card {
+  background: linear-gradient(135deg, rgba(18, 26, 38, 0.95), rgba(28, 40, 60, 0.9));
+  border: 1px solid rgba(125, 174, 255, 0.18);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.room-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 38px rgba(5, 10, 20, 0.45);
+}
+
+.room-carousel-wrapper {
+  position: relative;
+  min-height: 220px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.room-carousel,
+.room-carousel .carousel-inner,
+.room-carousel .carousel-item {
+  height: 100%;
+}
+
+.room-image-wrapper {
+  position: absolute;
+  inset: 0;
+}
+
+.room-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.9);
+  transition: transform 0.5s ease;
+}
+
+.room-card:hover .room-image {
+  transform: scale(1.05);
+}
+
+.room-carousel .carousel-control-prev,
+.room-carousel .carousel-control-next {
+  width: 12%;
+}
+
+.room-carousel .carousel-control-prev-icon,
+.room-carousel .carousel-control-next-icon {
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.6));
+  background-size: 75%;
+}
+
+.room-carousel .carousel-indicators [data-bs-target] {
+  background-color: rgba(236, 244, 255, 0.8);
+}
+
+.room-carousel .carousel-indicators .active {
+  background-color: #7daeff;
+}
+
+.room-info {
+  padding: 1.8rem;
+}
+
+.room-card .card-title {
+  color: #f3f7ff;
+  font-weight: 600;
+  font-size: 1.35rem;
+}
+
+.room-card .card-text {
+  color: rgba(232, 240, 255, 0.85);
+  margin-bottom: 0;
+}
+
+.room-extra {
+  margin-top: 0.75rem;
+  color: rgba(232, 240, 255, 0.7) !important;
+}
+
+.room-card .btn-primary {
+  background: linear-gradient(135deg, #6c9cff, #527de9);
+  border: none;
+  padding: 0.55rem 1.6rem;
+  font-weight: 600;
+  box-shadow: 0 12px 28px rgba(73, 124, 216, 0.35);
+}
+
+.room-card .btn-primary:hover {
+  background: linear-gradient(135deg, #7daeff, #638cf5);
+}
+
+@media (max-width: 767.98px) {
+  .room-carousel-wrapper {
+    min-height: 200px;
+  }
+
+  .room-info {
+    padding: 1.4rem;
+  }
+
+  .room-card .card-title {
+    font-size: 1.2rem;
+  }
+}
