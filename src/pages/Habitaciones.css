@@ -115,4 +115,76 @@
   .room-card .card-title {
     font-size: 1.2rem;
   }
+  }
+
+/* Calendar (react-calendar) overrides */
+.react-calendar {
+  background: rgba(18, 26, 38, 0.96);
+  color: #f4f6fa;
+  border: 1px solid rgba(125, 174, 255, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(5, 10, 20, 0.35);
+  padding: 0.75rem;
+}
+
+.react-calendar__navigation button {
+  color: #f6f8ff;
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+.react-calendar__navigation button:enabled:hover,
+.react-calendar__navigation button:enabled:focus {
+  background: rgba(125, 174, 255, 0.15);
+  color: #ffffff;
+}
+
+.react-calendar__month-view__weekdays__weekday {
+  color: rgba(226, 235, 255, 0.82);
+  font-weight: 600;
+}
+
+.react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none;
+}
+
+.react-calendar__tile {
+  color: #f4f6fa;
+  border-radius: 10px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.react-calendar__tile:enabled:hover,
+.react-calendar__tile:enabled:focus {
+  background: rgba(125, 174, 255, 0.18);
+  color: #ffffff;
+}
+
+.react-calendar__tile--active,
+.react-calendar__tile--rangeStart,
+.react-calendar__tile--rangeEnd {
+  background: linear-gradient(140deg, #7daeff, #638cf5);
+  color: #ffffff;
+}
+
+.react-calendar__tile--range {
+  background: rgba(125, 174, 255, 0.25);
+  color: #ffffff;
+}
+
+.react-calendar__tile:disabled {
+  color: rgba(244, 246, 250, 0.28);
+}
+
+.react-calendar__tile--now {
+  background: rgba(125, 174, 255, 0.12);
+  color: #ffffff;
+}
+
+.modal-title {
+  color: #f6f8ff;
+}
+
+.modal-body p {
+  color: rgba(244, 246, 250, 0.9);
 }

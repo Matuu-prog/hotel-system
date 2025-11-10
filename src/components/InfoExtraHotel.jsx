@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { WiDaySunny, WiCloudy, WiRain } from "react-icons/wi";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import "./InfoExtraHotel.css";
 
 // Ícono del marcador del mapa
 const iconHotel = new L.Icon({
@@ -60,9 +61,9 @@ export default function InfoExtraHotel() {
 
   return (
     <div className="my-5">
-      <h3 className="text-center mb-4 fw-semibold">
+     <h3 className="info-extra-heading text-center mb-4 fw-semibold">
         Datos que te pueden interesar para una perfecta estadía en Salta, <br />
-        en el maravilloso <span className="text-primary">Hotel Paradise 🏖️</span>
+        en el maravilloso <span className="info-extra-highlight">Hotel Paradise 🏖️</span>
       </h3>
 
       <Row className="justify-content-center g-4">

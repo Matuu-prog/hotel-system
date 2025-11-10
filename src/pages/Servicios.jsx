@@ -8,42 +8,42 @@ const servicios = [
     desc: "Sabores internacionales, maridajes de autor y un ambiente acogedor.",
     emoji: "🍽️",
     imagen:
-      "https://images.unsplash.com/photo-1555992336-cbfddb8e6f83?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170",
   },
   {
     titulo: "Piscina",
     desc: "Piscina climatizada con solárium y vistas panorámicas del hotel.",
     emoji: "🏊",
     imagen:
-      "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170",
   },
   {
     titulo: "Spa & Wellness",
     desc: "Masajes relajantes, sauna seca y circuito de aguas revitalizante.",
     emoji: "💆",
     imagen:
-      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1583416750470-965b2707b355?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170",
   },
   {
     titulo: "Golf",
     desc: "Campo privado de 18 hoyos rodeado de un paisaje natural único.",
     emoji: "⛳",
     imagen:
-      "https://images.unsplash.com/photo-1519861531473-9200262188bf?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1632946269126-0f8edbe8b068?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1131",
   },
   {
     titulo: "Room Service",
     desc: "Atención personalizada las 24 horas para lo que necesites.",
     emoji: "🛎️",
     imagen:
-      "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1529169436040-836f3d93f0f8?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170",
   },
   {
     titulo: "Traslados",
     desc: "Servicio de chofer privado aeropuerto ↔ hotel, disponible a toda hora.",
     emoji: "🚐",
     imagen:
-      "https://images.unsplash.com/photo-1521737604893-ff0b6f92b6f6?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1676107773690-9d670f8b1afa?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170",
   },
 ];
 

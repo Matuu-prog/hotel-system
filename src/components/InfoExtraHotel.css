@@ -1,0 +1,14 @@
+.info-extra-heading {
+  color: #f6f8ff;
+  text-shadow: 0 0 14px rgba(125, 174, 255, 0.35);
+  letter-spacing: 0.15px;
+}
+
+.info-extra-highlight {
+  color: #7daeff;
+  font-weight: 700;
+}
+
+.info-extra-heading .info-extra-highlight {
+  text-shadow: 0 0 10px rgba(125, 174, 255, 0.45);
+}
