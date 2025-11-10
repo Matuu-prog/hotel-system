@@ -6,6 +6,8 @@ import { useState } from "react";
 import NavbarUsuario from "../components/NavBarUsuario";
 import CarouselHotel from "../components/CarouselHotel";
 import { Container, Row, Col, Form, Button } from "react-bootstrap";
+import InfoExtraHotel from "../components/InfoExtraHotel";
+
 
 function Usuario() {
   const [formData, setFormData] = useState({
@@ -62,6 +64,7 @@ function Usuario() {
     <>
       <NavbarUsuario />
       <CarouselHotel />
+      <InfoExtraHotel />
       <Container className="mt-4">
         <div className="p-5 text-center bg-dark text-light rounded-4 shadow-lg">
           <h2 className="fw-semibold">Bienvenido a Hotel Paradise 🌴</h2>
