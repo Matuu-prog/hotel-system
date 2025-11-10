@@ -79,8 +79,19 @@ export default function Operador() {
   const [filtroPago, setFiltroPago] = useState("todas"); // todas | pendiente | pagado
   const [busqueda, setBusqueda] = useState("");
   const [mensajeSel, setMensajeSel] = useState(null);
-  const [respuesta, setRespuesta] = useState(""); 
-
+  const [respuesta, setRespuesta] = useState("");
+  const crearPagoInicial = () => ({
+    metodo: "efectivo",
+    monto: "",
+    efectivoEntregado: "",
+    titular: "",
+    numero: "",
+    vencimiento: "",
+    cvv: "",
+  });
+  const [mostrarModalPago, setMostrarModalPago] = useState(false);
+  const [reservaPago, setReservaPago] = useState(null);
+  const [formPago, setFormPago] = useState(() => crearPagoInicial());
 
   useEffect(() => {
     // Habitaciones iniciales si no existen
@@ -210,6 +221,16 @@ export default function Operador() {
     [reservas]
   );
 
+  const calcularMontoReserva = (reserva) => {
+    if (!reserva) return 0;
+    const montoReserva = Number(reserva?.pago?.monto || 0);
+    if (montoReserva > 0) return montoReserva;
+    const habitacion = habitaciones.find((h) => String(h.id) === String(reserva.roomId));
+    const precioBase = Number(habitacion?.precio ?? habitacion?.tarifa ?? 0);
+    const noches = Math.max(1, rangeToArray(reserva.start, reserva.end).length - 1);
+    return precioBase * noches;
+  };
+
   const puertasAbiertas = useMemo(
     () =>
       Object.entries(estadosPuertas).reduce(
@@ -284,26 +305,105 @@ export default function Operador() {
   };
 
   const procesarPago = (reserva) => {
-    const monto = Number(reserva?.pago?.monto || 0);
-    const upd = reservas.map((r) =>
-      r.id === reserva.id
-        ? {
-            ...r,
-            pago: {
-              ...r.pago,
-              estado: "pagado",
-              fecha: new Date().toISOString(),
-              operador: usuarioActual?.nombre || "Desconocido",
-            },
-          }
-        : r
+    if (!reserva) return;
+    const sugerido = calcularMontoReserva(reserva);
+    setReservaPago(reserva);
+    setFormPago({
+      ...crearPagoInicial(),
+      monto: sugerido ? String(sugerido) : "",
+      efectivoEntregado: sugerido ? String(sugerido) : "",
+      titular: reserva?.cliente?.nombre || "",
+    });
+    setMostrarModalPago(true);
+  };
+
+  const cerrarModalPago = () => {
+    setMostrarModalPago(false);
+    setReservaPago(null);
+    setFormPago(crearPagoInicial());
+  };
+
+  const onChangePago = (e) => {
+    const { name, value } = e.target;
+    setFormPago((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const confirmarPago = (event) => {
+    event.preventDefault();
+    if (!reservaPago) return;
+
+    const metodo = formPago.metodo === "tarjeta" ? "tarjeta" : "efectivo";
+    const monto = Number(formPago.monto);
+    if (!Number.isFinite(monto) || monto <= 0) {
+      alert("Ingresá un monto válido para el pago.");
+      return;
+    }
+
+    if (metodo === "efectivo") {
+      const entregado = Number(formPago.efectivoEntregado);
+      if (!Number.isFinite(entregado) || entregado <= 0) {
+        alert("Ingresá la cantidad de efectivo recibida.");
+        return;
+      }
+    } else {
+      if (!formPago.titular.trim()) {
+        alert("Ingresá el titular de la tarjeta.");
+        return;
+      }
+      if (!/^\d{13,19}$/.test(formPago.numero)) {
+        alert("Número de tarjeta inválido.");
+        return;
+      }
+      if (!/^\d{2}\/\d{2}$/.test(formPago.vencimiento)) {
+        alert("El vencimiento debe tener el formato MM/AA.");
+        return;
+      }
+      if (!/^\d{3,4}$/.test(formPago.cvv)) {
+        alert("Ingresá un CVV válido.");
+        return;
+      }
+    }
+
+    const fechaPago = new Date().toISOString();
+    const pagoActualizado = {
+      estado: "pagado",
+      metodo: metodo === "tarjeta" ? "Tarjeta" : "Efectivo",
+      monto,
+      fecha: fechaPago,
+      operador: usuarioActual?.nombre || "Desconocido",
+    };
+
+    if (metodo === "efectivo") {
+      pagoActualizado.efectivoEntregado = Number(formPago.efectivoEntregado);
+    } else {
+      pagoActualizado.titular = formPago.titular.trim();
+      pagoActualizado.masked = `**** **** **** ${formPago.numero.slice(-4)}`;
+      pagoActualizado.vencimiento = formPago.vencimiento;
+    }
+
+    const reservaActualizada = {
+      ...reservaPago,
+      pago: {
+        ...reservaPago.pago,
+        ...pagoActualizado,
+      },
+    };
+
+    const reservasActualizadas = reservas.map((r) =>
+      r.id === reservaActualizada.id ? reservaActualizada : r
     );
-    guardarReservas(upd);
-    pushLog("Procesó pago", {
-      reservaId: reserva.id,
-      roomId: reserva.roomId,
+    guardarReservas(reservasActualizadas);
+    if (reservaSel?.id === reservaActualizada.id) {
+      setReservaSel(reservaActualizada);
+    }
+
+    pushLog(`Procesó pago (${pagoActualizado.metodo.toLowerCase()})`, {
+      reservaId: reservaActualizada.id,
+      roomId: reservaActualizada.roomId,
       monto,
     });
+    cerrarModalPago();
+    alert("Pago registrado correctamente.");
   };
 
   const cancelarReserva = (reserva) => {
@@ -495,7 +595,7 @@ export default function Operador() {
               <>
                 <h4 className="mb-3">Pagos</h4>
                 <Card className="shadow-sm mb-3">
-                  <Card.Header className="fw-bold">Pendientes</Card.Header>
+                  <Card.Header className="fw-bold">Procesar pago</Card.Header>
                   <Card.Body className="p-0">
                     <Table responsive className="m-0">
                       <thead>
@@ -511,7 +611,7 @@ export default function Operador() {
                         {pendientesPago.length === 0 && (
                           <tr>
                             <td colSpan={5} className="text-center p-3">
-                              No hay pagos pendientes.
+                              No hay pagos pendientes para procesar.
                             </td>
                           </tr>
                         )}
@@ -548,6 +648,7 @@ export default function Operador() {
                           <th>Cliente</th>
                           <th>Rango</th>
                           <th>Monto</th>
+                          <th>Método</th>
                           <th>Fecha pago</th>
                           <th>Operador</th>
                         </tr>
@@ -555,7 +656,7 @@ export default function Operador() {
                       <tbody>
                         {pagadas.length === 0 && (
                           <tr>
-                            <td colSpan={6} className="text-center p-3">
+                            <td colSpan={7} className="text-center p-3">
                               No hay pagos registrados.
                             </td>
                           </tr>
@@ -568,6 +669,7 @@ export default function Operador() {
                               {r.start} → {r.end}
                             </td>
                             <td>${r.pago?.monto || 0}</td>
+                            <td>{r.pago?.metodo || "-"}</td>
                             <td>{r.pago?.fecha ? r.pago.fecha.split("T")[0] : "-"}</td>
                             <td>{r.pago?.operador || "-"}</td>
                           </tr>
@@ -872,6 +974,117 @@ export default function Operador() {
             Cerrar
           </Button>
         </Modal.Footer>
+      </Modal>
+      <Modal show={mostrarModalPago} onHide={cerrarModalPago} centered>
+        <Form onSubmit={confirmarPago}>
+          <Modal.Header closeButton>
+            <Modal.Title>Procesar pago</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {reservaPago ? (
+              <>
+                <p className="mb-3 small text-muted">
+                  {reservaPago.roomName} — {reservaPago.start} → {reservaPago.end}
+                  <br />
+                  Cliente: {reservaPago.cliente?.nombre} — {reservaPago.cliente?.dni}
+                </p>
+                <Form.Group className="mb-3">
+                  <Form.Label>Método de pago</Form.Label>
+                  <Form.Select name="metodo" value={formPago.metodo} onChange={onChangePago}>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta</option>
+                  </Form.Select>
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Monto a cobrar</Form.Label>
+                  <Form.Control
+                    name="monto"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formPago.monto}
+                    onChange={onChangePago}
+                    placeholder="Ingrese el monto"
+                    required
+                  />
+                </Form.Group>
+                {formPago.metodo === "efectivo" ? (
+                  <Form.Group className="mb-0">
+                    <Form.Label>Cantidad de efectivo recibido</Form.Label>
+                    <Form.Control
+                      name="efectivoEntregado"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formPago.efectivoEntregado}
+                      onChange={onChangePago}
+                      placeholder="Ej: 5000"
+                      required
+                    />
+                  </Form.Group>
+                ) : (
+                  <>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Titular</Form.Label>
+                      <Form.Control
+                        name="titular"
+                        value={formPago.titular}
+                        onChange={onChangePago}
+                        required
+                      />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Número de tarjeta</Form.Label>
+                      <Form.Control
+                        name="numero"
+                        value={formPago.numero}
+                        onChange={onChangePago}
+                        placeholder="Solo números"
+                        required
+                      />
+                    </Form.Group>
+                    <Row className="g-3">
+                      <Col sm={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Vencimiento (MM/AA)</Form.Label>
+                          <Form.Control
+                            name="vencimiento"
+                            value={formPago.vencimiento}
+                            onChange={onChangePago}
+                            placeholder="MM/AA"
+                            required
+                          />
+                        </Form.Group>
+                      </Col>
+                      <Col sm={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label>CVV</Form.Label>
+                          <Form.Control
+                            name="cvv"
+                            value={formPago.cvv}
+                            onChange={onChangePago}
+                            placeholder="3 o 4 dígitos"
+                            required
+                          />
+                        </Form.Group>
+                      </Col>
+                    </Row>
+                  </>
+                )}
+              </>
+            ) : (
+              <p className="mb-0">Seleccioná una reserva para procesar el pago.</p>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={cerrarModalPago}>
+              Cancelar
+            </Button>
+            <Button type="submit" variant="success" disabled={!reservaPago}>
+              Confirmar pago
+            </Button>
+          </Modal.Footer>
+        </Form>
       </Modal>
     </>
   );
