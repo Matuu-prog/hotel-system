@@ -37,12 +37,18 @@ h1,
  h4,
  h5,
  h6 {
-  color: inherit;
+  color: #edf2ff;
   margin-top: 0;
 }
 
+h2 {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+
 p {
-  color: rgba(244, 246, 250, 0.88);
+  color: rgba(244, 246, 250, 0.92);
 }
 
 .card {
@@ -50,6 +56,13 @@ p {
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: inherit;
   backdrop-filter: blur(6px);
+}
+.card .card-title {
+  color: #f1f5ff;
+}
+
+.card .card-text {
+  color: rgba(232, 238, 250, 0.85);
 }
 .card.bg-light,
 .card.bg-white,

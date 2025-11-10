@@ -1,0 +1,76 @@
+.service-section {
+  padding-bottom: 2rem;
+}
+
+.section-title {
+  color: #f2f6ff;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-shadow: 0 0 12px rgba(120, 177, 255, 0.35);
+}
+
+.service-card {
+  background: linear-gradient(135deg, rgba(18, 26, 38, 0.95), rgba(28, 40, 60, 0.9));
+  border: 1px solid rgba(125, 174, 255, 0.18);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.service-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 38px rgba(5, 10, 20, 0.45);
+}
+
+.service-image-wrapper {
+  position: relative;
+  min-height: 220px;
+  overflow: hidden;
+}
+
+.service-image {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.9);
+  transition: transform 0.5s ease;
+}
+
+.service-card:hover .service-image {
+  transform: scale(1.05);
+}
+
+.service-card .card-body {
+  padding: 1.8rem;
+}
+
+.service-card .card-title {
+  color: #f3f7ff;
+  font-weight: 600;
+  font-size: 1.35rem;
+}
+
+.service-card .card-text {
+  color: rgba(232, 240, 255, 0.85);
+  margin-bottom: 0;
+}
+
+.service-emoji {
+  font-size: 1.4rem;
+  margin-right: 0.35rem;
+}
+
+@media (max-width: 767.98px) {
+  .service-image-wrapper {
+    min-height: 200px;
+  }
+
+  .service-card .card-body {
+    padding: 1.4rem;
+  }
+
+  .service-card .card-title {
+    font-size: 1.2rem;
+  }
+}
