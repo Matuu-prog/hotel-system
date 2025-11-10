@@ -11,12 +11,25 @@ import {
   Modal,
   Form,
   Table,
+  Alert,
 } from "react-bootstrap";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import NavbarUsuario from "../components/NavBarUsuario";
 
 // Utils
-const ymd = (d) =>
-  new Date(d).toISOString().split("T")[0];
+const ymd = (value) => {
+  if (!value) return "";
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 const rangeToArray = (start, end) => {
   const out = [];
@@ -73,7 +86,7 @@ export default function Operador() {
   const [estadosPuertas, setEstadosPuertas] = useState({});
 
   // UI
-  const [active, setActive] = useState("reservas"); // reservas | pagos | gestion
+  const [active, setActive] = useState("reservas"); // reservas | reservar | pagos | gestion
   const [show, setShow] = useState(false);
   const [reservaSel, setReservaSel] = useState(null);
   const [filtroPago, setFiltroPago] = useState("todas"); // todas | pendiente | pagado
@@ -92,6 +105,18 @@ export default function Operador() {
   const [mostrarModalPago, setMostrarModalPago] = useState(false);
   const [reservaPago, setReservaPago] = useState(null);
   const [formPago, setFormPago] = useState(() => crearPagoInicial());
+  const [formReserva, setFormReserva] = useState({
+    roomId: "",
+    start: null,
+    end: null,
+  });
+  const [clienteReserva, setClienteReserva] = useState({
+    nombre: "",
+    email: "",
+    telefono: "",
+    dni: "",
+  });
+  const [mensajeReserva, setMensajeReserva] = useState({ tipo: "", texto: "" });
 
   useEffect(() => {
     // Habitaciones iniciales si no existen
@@ -221,6 +246,55 @@ export default function Operador() {
     [reservas]
   );
 
+  const habitacionSeleccionada = useMemo(
+    () => habitaciones.find((h) => String(h.id) === String(formReserva.roomId)),
+    [habitaciones, formReserva.roomId]
+  );
+
+  const fechasNoDisponibles = useMemo(() => {
+    if (!formReserva.roomId) return [];
+    const dias = new Set();
+    (habitacionSeleccionada?.reservedDates || [])
+      .filter(Boolean)
+      .forEach((d) => dias.add(d));
+    reservas
+      .filter((r) => String(r.roomId) === String(formReserva.roomId))
+      .forEach((r) => {
+        rangeToArray(r.start, r.end).forEach((d) => dias.add(d));
+      });
+    return Array.from(dias).reduce((acc, d) => {
+      const [year, month, day] = d.split("-").map(Number);
+      if (
+        Number.isFinite(year) &&
+        Number.isFinite(month) &&
+        Number.isFinite(day)
+      ) {
+        acc.push(new Date(year, month - 1, day));
+      }
+      return acc;
+    }, []);
+  }, [formReserva.roomId, habitacionSeleccionada, reservas]);
+
+  const fechasSeleccionadas = useMemo(() => {
+    if (!formReserva.start || !formReserva.end) return [];
+    const startStr = ymd(formReserva.start);
+    const endStr = ymd(formReserva.end);
+    if (!startStr || !endStr) return [];
+    return rangeToArray(startStr, endStr);
+  }, [formReserva.start, formReserva.end]);
+
+  const nochesNuevaReserva = useMemo(() => {
+    if (fechasSeleccionadas.length === 0) return 0;
+    return Math.max(1, fechasSeleccionadas.length - 1);
+  }, [fechasSeleccionadas]);
+
+  const montoEstimadoReserva = useMemo(() => {
+    if (!habitacionSeleccionada) return 0;
+    const tarifa = Number(habitacionSeleccionada?.precio ?? habitacionSeleccionada?.tarifa ?? 0);
+    if (!Number.isFinite(tarifa) || tarifa <= 0) return 0;
+    return tarifa * (nochesNuevaReserva || 0);
+  }, [habitacionSeleccionada, nochesNuevaReserva]);
+
   const calcularMontoReserva = (reserva) => {
     if (!reserva) return 0;
     const montoReserva = Number(reserva?.pago?.monto || 0);
@@ -292,6 +366,141 @@ export default function Operador() {
     const actualizado = listaActualizada.find((m) => m.id === mensajeSel.id) || null;
     setMensajeSel(actualizado);
     setRespuesta("");
+  };
+
+  const resetFormularioReserva = () => {
+    setFormReserva({ roomId: "", start: null, end: null });
+    setClienteReserva({ nombre: "", email: "", telefono: "", dni: "" });
+    setMensajeReserva({ tipo: "", texto: "" });
+  };
+
+  const seleccionarHabitacion = (event) => {
+    const roomId = event.target.value;
+    setFormReserva({ roomId, start: null, end: null });
+    setMensajeReserva({ tipo: "", texto: "" });
+  };
+
+  const onFechasReservaChange = (dates) => {
+    const [start, end] = dates;
+    setFormReserva((prev) => ({ ...prev, start, end }));
+    setMensajeReserva({ tipo: "", texto: "" });
+  };
+
+  const onChangeClienteReserva = (event) => {
+    const { name, value } = event.target;
+    setClienteReserva((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const validarClienteReserva = () => {
+    if (!clienteReserva.nombre.trim()) return "Ingresá el nombre del huésped.";
+    if (!/^\S+@\S+\.\S+$/.test(clienteReserva.email)) return "Ingresá un email válido.";
+    if (!/^[\d\s()+-]{6,20}$/.test(clienteReserva.telefono)) return "Ingresá un teléfono válido.";
+    if (!clienteReserva.dni.trim()) return "Ingresá un documento o DNI válido.";
+    return "";
+  };
+
+  const haySolapamientoReserva = (roomId, startStr, endStr) => {
+    if (!roomId || !startStr || !endStr) return false;
+    const ocupadas = new Set();
+    const habitacion = habitaciones.find((h) => String(h.id) === String(roomId));
+    (habitacion?.reservedDates || []).forEach((d) => ocupadas.add(d));
+    reservas
+      .filter((r) => String(r.roomId) === String(roomId))
+      .forEach((r) => {
+        rangeToArray(r.start, r.end).forEach((d) => ocupadas.add(d));
+      });
+    return rangeToArray(startStr, endStr).some((d) => ocupadas.has(d));
+  };
+
+  const crearReservaPendiente = (event) => {
+    event.preventDefault();
+    setMensajeReserva({ tipo: "", texto: "" });
+
+    if (!formReserva.roomId) {
+      setMensajeReserva({ tipo: "danger", texto: "Seleccioná una habitación." });
+      return;
+    }
+    if (!formReserva.start || !formReserva.end) {
+      setMensajeReserva({ tipo: "danger", texto: "Seleccioná un rango de fechas válido." });
+      return;
+    }
+
+    const startStr = ymd(formReserva.start);
+    const endStr = ymd(formReserva.end);
+    if (!startStr || !endStr) {
+      setMensajeReserva({ tipo: "danger", texto: "No pudimos interpretar las fechas seleccionadas." });
+      return;
+    }
+
+    if (new Date(startStr) > new Date(endStr)) {
+      setMensajeReserva({ tipo: "danger", texto: "La fecha de salida no puede ser anterior a la de ingreso." });
+      return;
+    }
+
+    if (haySolapamientoReserva(formReserva.roomId, startStr, endStr)) {
+      setMensajeReserva({
+        tipo: "danger",
+        texto: "Las fechas seleccionadas no están disponibles para esta habitación.",
+      });
+      return;
+    }
+
+    const errorCliente = validarClienteReserva();
+    if (errorCliente) {
+      setMensajeReserva({ tipo: "danger", texto: errorCliente });
+      return;
+    }
+
+    const roomName = habitacionSeleccionada?.nombre || `Habitación ${formReserva.roomId}`;
+    const noches = Math.max(1, rangeToArray(startStr, endStr).length - 1);
+    const tarifaBase = Number(habitacionSeleccionada?.precio ?? habitacionSeleccionada?.tarifa ?? 0);
+    const montoEstimado =
+      Number.isFinite(tarifaBase) && tarifaBase > 0 ? tarifaBase * noches : montoEstimadoReserva;
+
+    const nuevaReserva = {
+      id: Date.now(),
+      roomId: String(formReserva.roomId),
+      roomName,
+      start: startStr,
+      end: endStr,
+      cliente: {
+        nombre: clienteReserva.nombre.trim(),
+        email: clienteReserva.email.trim(),
+        telefono: clienteReserva.telefono.trim(),
+        dni: clienteReserva.dni.trim(),
+      },
+      pago: {
+        estado: "pendiente",
+        metodo: null,
+        monto: Number.isFinite(montoEstimado) ? montoEstimado : 0,
+        fecha: null,
+        operador: usuarioActual?.nombre || "Operador",
+      },
+      createdAt: new Date().toISOString(),
+      origen: "operador",
+    };
+
+    const reservasActualizadas = [...reservas, nuevaReserva];
+    guardarReservas(reservasActualizadas);
+
+    const rango = rangeToArray(startStr, endStr);
+    const habitacionesActualizadas = habitaciones.map((h) => {
+      if (String(h.id) !== String(formReserva.roomId)) return h;
+      const fechas = new Set([...(h.reservedDates || [])]);
+      rango.forEach((d) => fechas.add(d));
+      return { ...h, reservedDates: Array.from(fechas).sort() };
+    });
+    guardarHabitaciones(habitacionesActualizadas);
+
+    pushLog("Creó reserva pendiente", {
+      reservaId: nuevaReserva.id,
+      roomId: nuevaReserva.roomId,
+      rango: `${startStr} → ${endStr}`,
+    });
+
+    alert("Reserva creada con estado pendiente de pago.");
+    resetFormularioReserva();
+    setActive("reservas");
   };
 
   // Acciones
@@ -473,6 +682,13 @@ export default function Operador() {
                 </ListGroup.Item>
                 <ListGroup.Item
                   action
+                  active={active === "reservar"}
+                  onClick={() => setActive("reservar")}
+                >
+                  📝 Reservar
+                </ListGroup.Item>
+                <ListGroup.Item
+                  action
                   active={active === "pagos"}
                   onClick={() => setActive("pagos")}
                 >
@@ -530,6 +746,155 @@ export default function Operador() {
 
           {/* Content */}
           <Col md={9} lg={10}>
+          {/* RESERVAR */}
+            {active === "reservar" && (
+              <>
+                <h4 className="mb-3">Reservar habitación</h4>
+                <Card className="shadow-sm">
+                  <Card.Body>
+                    {mensajeReserva.texto && (
+                      <Alert variant={mensajeReserva.tipo || "info"} className="mb-3">
+                        {mensajeReserva.texto}
+                      </Alert>
+                    )}
+
+                    <Form onSubmit={crearReservaPendiente}>
+                      <Row className="g-4">
+                        <Col md={5}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Habitación</Form.Label>
+                            <Form.Select value={formReserva.roomId} onChange={seleccionarHabitacion} required>
+                              <option value="">Seleccioná una habitación disponible</option>
+                              {habitaciones.map((hab) => (
+                                <option key={hab.id} value={hab.id}>
+                                  {hab.nombre} — ${Number(hab.precio ?? hab.tarifa ?? 0)} / noche
+                                </option>
+                              ))}
+                            </Form.Select>
+                          </Form.Group>
+
+                          {habitacionSeleccionada ? (
+                            <Card className="bg-light border-0">
+                              <Card.Body className="py-3">
+                                <div className="fw-semibold">{habitacionSeleccionada.nombre}</div>
+                                <div className="small text-muted">Piso {habitacionSeleccionada.piso || "-"}</div>
+                                <div className="small mt-2">{habitacionSeleccionada.descripcion}</div>
+                                <div className="small mt-2">
+                                  Estadía: {formReserva.start ? ymd(formReserva.start) : "-"} → {formReserva.end ? ymd(formReserva.end) : "-"}
+                                </div>
+                                <div className="small">Noches: {nochesNuevaReserva || 0}</div>
+                                <div className="fw-bold mt-2">
+                                  Monto estimado: ${
+                                    (montoEstimadoReserva || 0).toLocaleString("es-AR")
+                                  }
+                                </div>
+                              </Card.Body>
+                            </Card>
+                          ) : (
+                            <Form.Text muted>
+                              Seleccioná una habitación para ver su descripción y tarifa.
+                            </Form.Text>
+                          )}
+                        </Col>
+                        <Col md={7}>
+                          <Form.Label>Seleccionar fechas</Form.Label>
+                          <div className="d-flex flex-column flex-md-row gap-3">
+                            <DatePicker
+                              selectsRange
+                              startDate={formReserva.start}
+                              endDate={formReserva.end}
+                              onChange={onFechasReservaChange}
+                              minDate={new Date()}
+                              excludeDates={fechasNoDisponibles}
+                              inline
+                              monthsShown={2}
+                              shouldCloseOnSelect={false}
+                              dateFormat="dd/MM/yyyy"
+                            />
+                            <div className="flex-grow-1">
+                              <Card className="bg-light border-0 h-100">
+                                <Card.Body className="small">
+                                  <div className="fw-semibold mb-2">Resumen de fechas</div>
+                                  <div>Ingreso: {formReserva.start ? ymd(formReserva.start) : "-"}</div>
+                                  <div>Salida: {formReserva.end ? ymd(formReserva.end) : "-"}</div>
+                                  <div>Duración: {nochesNuevaReserva > 0 ? `${nochesNuevaReserva} noche(s)` : "-"}</div>
+                                  <div className="mt-2">
+                                    Las fechas en gris no están disponibles para esta habitación.
+                                  </div>
+                                </Card.Body>
+                              </Card>
+                            </div>
+                          </div>
+                        </Col>
+                      </Row>
+
+                      <hr className="my-4" />
+
+                      <Row className="g-3">
+                        <Col md={6}>
+                          <Form.Group controlId="clienteNombre">
+                            <Form.Label>Nombre del huésped</Form.Label>
+                            <Form.Control
+                              name="nombre"
+                              value={clienteReserva.nombre}
+                              onChange={onChangeClienteReserva}
+                              placeholder="Nombre y apellido"
+                              required
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group controlId="clienteEmail">
+                            <Form.Label>Email</Form.Label>
+                            <Form.Control
+                              type="email"
+                              name="email"
+                              value={clienteReserva.email}
+                              onChange={onChangeClienteReserva}
+                              placeholder="cliente@hotel.com"
+                              required
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group controlId="clienteTelefono">
+                            <Form.Label>Teléfono</Form.Label>
+                            <Form.Control
+                              name="telefono"
+                              value={clienteReserva.telefono}
+                              onChange={onChangeClienteReserva}
+                              placeholder="+54 9 11 1234 5678"
+                              required
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group controlId="clienteDni">
+                            <Form.Label>Documento / DNI</Form.Label>
+                            <Form.Control
+                              name="dni"
+                              value={clienteReserva.dni}
+                              onChange={onChangeClienteReserva}
+                              placeholder="Documento del huésped"
+                              required
+                            />
+                          </Form.Group>
+                        </Col>
+                      </Row>
+
+                      <div className="mt-4 d-flex gap-2 flex-wrap">
+                        <Button type="submit" variant="primary">
+                          Guardar reserva pendiente de pago
+                        </Button>
+                        <Button type="button" variant="outline-secondary" onClick={resetFormularioReserva}>
+                          Limpiar formulario
+                        </Button>
+                      </div>
+                    </Form>
+                  </Card.Body>
+                </Card>
+              </>
+            )}
             {/* RESERVAS */}
             {active === "reservas" && (
               <>
