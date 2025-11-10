@@ -61,10 +61,31 @@ export default function Reservar() {
       setHabitaciones(data);
     } else {
       const iniciales = [
-        { id: 1, nombre: "Suite Premium", descripcion: "Amplia habitación con vista al mar.", precio: 200, reservedDates: [] },
-        { id: 2, nombre: "Habitación Doble", descripcion: "Ideal para parejas, con balcón privado.", precio: 150, reservedDates: [] },
-        { id: 3, nombre: "Habitación Simple", descripcion: "Cómoda y económica, perfecta para una persona.", precio: 100, reservedDates: [] },
-      ];
+        {
+          id: 1,
+          nombre: "Suite Premium",
+          descripcion: "Amplia habitación con vista al mar.",
+          precio: 200,
+          piso: 5,
+          reservedDates: [],
+        },
+        {
+          id: 2,
+          nombre: "Habitación Doble",
+          descripcion: "Ideal para parejas, con balcón privado.",
+          precio: 150,
+          piso: 4,
+          reservedDates: [],
+        },
+        {
+          id: 3,
+          nombre: "Habitación Simple",
+          descripcion: "Cómoda y económica, perfecta para una persona.",
+          precio: 100,
+          piso: 2,
+          reservedDates: [],
+        },
+        ];
       localStorage.setItem("habitaciones", JSON.stringify(iniciales));
       setHabitaciones(iniciales);
     }

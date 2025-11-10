@@ -70,7 +70,7 @@ export default function Operador() {
   const [reservas, setReservas] = useState([]);
   const [logs, setLogs] = useState([]);
   const [mensajes, setMensajes] = useState([]);
-
+  const [estadosPuertas, setEstadosPuertas] = useState({});
 
   // UI
   const [active, setActive] = useState("reservas"); // reservas | pagos | gestion
@@ -90,6 +90,7 @@ export default function Operador() {
         {
           id: 1,
           nombre: "Habitación Deluxe",
+          piso: 1,
           descripcion: "Cama King, vista al mar, aire acondicionado, TV, WiFi.",
           imagenes: ["/img/hab1a.jpg", "/img/hab1b.jpg", "/img/hab1c.jpg"],
           reservedDates: [],
@@ -97,6 +98,7 @@ export default function Operador() {
         {
           id: 2,
           nombre: "Habitación Familiar",
+          piso: 2,
           descripcion: "2 camas Queen, ideal para 4 personas, balcón privado.",
           imagenes: ["/img/hab2a.jpg", "/img/hab2b.jpg", "/img/hab2c.jpg"],
           reservedDates: [],
@@ -104,6 +106,7 @@ export default function Operador() {
         {
           id: 3,
           nombre: "Suite Ejecutiva",
+          piso: 3,
           descripcion: "Suite con escritorio, minibar, jacuzzi y servicio premium.",
           imagenes: ["/img/hab3a.jpg", "/img/hab3b.jpg", "/img/hab3c.jpg"],
           reservedDates: [],
@@ -112,6 +115,16 @@ export default function Operador() {
       save("habitaciones", habs);
     }
     setHabitaciones(habs);
+
+    // Estados iniciales de las puertas
+    const guardados = load("estadosPuertas", {});
+    const normalizados = {};
+    habs.forEach((hab) => {
+      const previo = String(guardados?.[hab.id] || "cerrada").toLowerCase();
+      normalizados[hab.id] = previo === "abierta" ? "abierta" : "cerrada";
+    });
+    setEstadosPuertas(normalizados);
+    save("estadosPuertas", normalizados);
 
     // Reservas (estructura prototipo)
     // Cada reserva: { id, roomId, roomName, start, end, cliente:{nombre,email,telefono,dni}, pago:{estado, metodo, monto, fecha?, oper?} }
@@ -152,6 +165,10 @@ export default function Operador() {
     setMensajes(lista);
     save("mensajesContacto", lista);
   };
+  const guardarEstadosPuertas = (estados) => {
+    setEstadosPuertas(estados);
+    save("estadosPuertas", estados);
+  };
   const pushLog = (accion, extra = {}) => {
     const entrada = {
       id: Date.now(),
@@ -191,6 +208,19 @@ export default function Operador() {
   const pagadas = useMemo(
     () => reservas.filter((r) => (r.pago?.estado || "pendiente") === "pagado"),
     [reservas]
+  );
+
+  const puertasAbiertas = useMemo(
+    () =>
+      Object.entries(estadosPuertas).reduce(
+        (acc, [, estado]) => acc + (estado === "abierta" ? 1 : 0),
+        0
+      ),
+    [estadosPuertas]
+  );
+  const puertasCerradas = Math.max(
+    habitaciones.length - puertasAbiertas,
+    0
   );
 
   const mensajesPendientes = useMemo(
@@ -302,6 +332,19 @@ export default function Operador() {
     if (reservaSel?.id === reserva.id) cerrarDetalles();
   };
 
+  const cambiarEstadoPuerta = (habitacion, nuevoEstado) => {
+    const estadoNormalizado = nuevoEstado === "abierta" ? "abierta" : "cerrada";
+    const actualizados = {
+      ...estadosPuertas,
+      [habitacion.id]: estadoNormalizado,
+    };
+    guardarEstadosPuertas(actualizados);
+    pushLog(`Puerta ${estadoNormalizado === "abierta" ? "abierta" : "cerrada"}`, {
+      roomId: habitacion.id,
+      roomName: habitacion.nombre,
+    });
+  };
+
   // UI helpers
   const PagoBadge = ({ estado }) => {
     const st = (estado || "pendiente").toLowerCase();
@@ -341,6 +384,13 @@ export default function Operador() {
                   onClick={() => setActive("mensajes")}
                 >
                   ✉️ Mensajes
+                </ListGroup.Item>
+                <ListGroup.Item
+                  action
+                  active={active === "puertas"}
+                  onClick={() => setActive("puertas")}
+                >
+                  🚪 Puertas
                 </ListGroup.Item>
                 <ListGroup.Item
                   action
@@ -637,11 +687,77 @@ export default function Operador() {
                       </Card>
                     </Col>
                   </Row>
-                )}
-              </>
             )}
+            </>
+        )}
 
-            {/* GESTIÓN */}
+        {/* PUERTAS */}
+        {active === "puertas" && (
+          <>
+            <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
+              <h4 className="m-0">Control de puertas</h4>
+              <Badge bg="success">Abiertas: {puertasAbiertas}</Badge>
+              <Badge bg="secondary">Cerradas: {puertasCerradas}</Badge>
+            </div>
+
+            {habitaciones.length === 0 ? (
+              <Card className="shadow-sm">
+                <Card.Body>No hay habitaciones registradas.</Card.Body>
+              </Card>
+            ) : (
+              <Row className="g-3">
+                {habitaciones.map((habitacion) => {
+                  const estadoActual = estadosPuertas[habitacion.id] || "cerrada";
+                  const esAbierta = estadoActual === "abierta";
+                  const pisoTexto =
+                    habitacion.piso === undefined || habitacion.piso === null || habitacion.piso === ""
+                      ? "No asignado"
+                      : typeof habitacion.piso === "number"
+                      ? `Piso ${habitacion.piso}`
+                      : habitacion.piso;
+                  return (
+                    <Col key={habitacion.id} xs={12} sm={6} lg={4}>
+                      <Card
+                        className={`shadow-sm h-100 border-${esAbierta ? "success" : "secondary"}`}
+                      >
+                        <Card.Body className="d-flex flex-column gap-3">
+                          <div>
+                            <div className="fw-bold">{habitacion.nombre}</div>
+                            <div className="text-muted small">Piso: {pisoTexto}</div>
+                            <div>
+                              Estado:{" "}
+                              <strong className={esAbierta ? "text-success" : "text-secondary"}>
+                                {esAbierta ? "Abierta" : "Cerrada"}
+                              </strong>
+                            </div>
+                          </div>
+                          <div className="d-flex gap-2 mt-auto">
+                            <Button
+                              variant="success"
+                              onClick={() => cambiarEstadoPuerta(habitacion, "abierta")}
+                              disabled={esAbierta}
+                            >
+                              Abrir
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              onClick={() => cambiarEstadoPuerta(habitacion, "cerrada")}
+                              disabled={!esAbierta}
+                            >
+                              Cerrar
+                            </Button>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  );
+                })}
+              </Row>
+            )}
+          </>
+        )}
+
+                {/* GESTIÓN */}
             {active === "gestion" && (
               <>
                 <h4 className="mb-3">Gestión rápida</h4>

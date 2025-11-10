@@ -23,6 +23,7 @@ function Habitaciones() {
         {
           id: 1,
           nombre: "Habitación Deluxe",
+          piso: 1,
           descripcion: "Cama King, vista al mar, aire acondicionado, TV, WiFi.",
           imagenes: ["/img/hab1a.jpg", "/img/hab1b.jpg", "/img/hab1c.jpg"],
           reservedDates: [],
@@ -30,6 +31,7 @@ function Habitaciones() {
         {
           id: 2,
           nombre: "Habitación Familiar",
+          piso: 2,
           descripcion: "2 camas Queen, ideal para 4 personas, balcón privado.",
           imagenes: ["/img/hab2a.jpg", "/img/hab2b.jpg", "/img/hab2c.jpg"],
           reservedDates: [],
@@ -37,6 +39,7 @@ function Habitaciones() {
         {
           id: 3,
           nombre: "Suite Ejecutiva",
+          piso: 3,
           descripcion: "Suite con escritorio, minibar, jacuzzi y servicio premium.",
           imagenes: ["/img/hab3a.jpg", "/img/hab3b.jpg", "/img/hab3c.jpg"],
           reservedDates: [],
